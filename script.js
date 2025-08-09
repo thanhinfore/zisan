@@ -52,9 +52,30 @@ async function init() {
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     updateLanguage('vi');
+
+    setupNav();
+
+
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+
+function setupNav() {
+    const buttons = document.querySelectorAll('#mainNav button');
+    const sections = document.querySelectorAll('section.panel');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            sections.forEach(s => s.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.section).classList.add('active');
+        });
+    });
+    if (buttons.length) buttons[0].click();
+}
+
+
 
 function openDB() {
     return new Promise((resolve, reject) => {

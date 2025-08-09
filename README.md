@@ -3,6 +3,7 @@
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
 ## Tính năng
+
 - Thêm, sửa, xóa thành viên và liên kết cha mẹ
 - Hiển thị cây gia phả đơn giản
 - Tìm kiếm nhanh theo tên
