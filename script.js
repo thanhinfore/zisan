@@ -1,6 +1,7 @@
 "use strict";
 
 const APP_VERSION = '3.0';
+const APP_VERSION = '2.0';
 
 const i18n = {
     vi: {
@@ -79,6 +80,12 @@ async function init() {
     updateLanguage(savedLang);
     setupNav();
     clearForm();
+    const savedLang = localStorage.getItem('lang') || 'vi';
+    document.getElementById('languageSelect').value = savedLang;
+    centerId = Number(localStorage.getItem('centerId')) || null;
+    document.getElementById('version').textContent = 'v' + APP_VERSION;
+    updateLanguage(savedLang);
+    setupNav();
 }
 
 document.addEventListener('DOMContentLoaded', init);
