@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="3.0">
-    <meta name="version" content="2.0">
+    <meta name="version" content="4.0">
     <title>Gia phả cá nhân</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -35,7 +34,7 @@
     <form id="memberForm">
         <input type="hidden" id="memberId">
         <label for="name" data-i18n="name">Họ tên</label>
-        <input type="text" id="name" required>
+        <input type="text" id="name" required data-i18n-placeholder="namePlaceholder" placeholder="Họ tên">
         <label for="birth" data-i18n="birth">Ngày sinh</label>
         <input type="date" id="birth">
         <label for="fatherSelect" data-i18n="father">Cha</label>
@@ -48,8 +47,6 @@
         <button type="submit" data-i18n="save">Lưu</button>
         <button type="button" id="deleteBtn" data-i18n="delete" disabled>Xóa</button>
         <button type="button" id="centerBtn" data-i18n="setCenter" disabled>Chọn làm trung tâm</button>
-        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
-        <button type="button" id="centerBtn" data-i18n="setCenter">Chọn làm trung tâm</button>
     </form>
 </section>
 <section id="treeSection" class="panel">

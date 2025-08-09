@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '3.0';
+const APP_VERSION = '4.0';
 
 const i18n = {
     vi: {
@@ -24,7 +24,8 @@ const i18n = {
         search: 'Tìm kiếm...',
         new: 'Thêm mới',
         noMembers: 'Chưa có thành viên. Hãy thêm thành viên đầu tiên.',
-        none: '--'
+        none: '--',
+        namePlaceholder: 'Nhập họ tên'
     },
     en: {
         title: 'Personal Genealogy',
@@ -47,7 +48,8 @@ const i18n = {
         search: 'Search...',
         new: 'New',
         noMembers: 'No members yet. Add one to get started.',
-        none: '--'
+        none: '--',
+        namePlaceholder: 'Enter full name'
     }
 };
 
@@ -79,11 +81,6 @@ async function init() {
     updateLanguage(savedLang);
     setupNav();
     clearForm();
-    document.getElementById('languageSelect').value = savedLang;
-    centerId = Number(localStorage.getItem('centerId')) || null;
-    document.getElementById('version').textContent = 'v' + APP_VERSION;
-    updateLanguage(savedLang);
-    setupNav();
 }
 
 document.addEventListener('DOMContentLoaded', init);
