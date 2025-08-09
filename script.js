@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '5.1';
+const APP_VERSION = '6.0';
 
 const i18n = {
     vi: {
@@ -27,7 +27,9 @@ const i18n = {
         none: '--',
         namePlaceholder: 'Nhập họ tên',
         nameRequired: 'Vui lòng nhập họ tên.',
-        invalidRelation: 'Không thể chọn bản thân làm cha, mẹ hoặc vợ/chồng.'
+        invalidRelation: 'Không thể chọn bản thân làm cha, mẹ hoặc vợ/chồng.',
+        selectAction: 'Chọn: 1-Sửa, 2-Thêm con, 3-Thêm vợ/chồng, 4-Thêm cha, 5-Thêm mẹ',
+        childParentPrompt: 'Bạn là cha hay mẹ của người con? (f/m)'
     },
     en: {
         title: 'Personal Genealogy',
@@ -53,7 +55,9 @@ const i18n = {
         none: '--',
         namePlaceholder: 'Enter full name',
         nameRequired: 'Please enter a name.',
-        invalidRelation: 'A member cannot be their own parent or spouse.'
+        invalidRelation: 'A member cannot be their own parent or spouse.',
+        selectAction: 'Choose: 1-Edit, 2-Add child, 3-Add spouse, 4-Add father, 5-Add mother',
+        childParentPrompt: 'Are you the father or mother of the child? (f/m)'
     }
 };
 
@@ -61,6 +65,8 @@ let db;
 let cryptoKey;
 let centerId;
 let currentLang;
+let pendingRelation;
+let relatedMemberId;
 
 async function init() {
     await initDB();
@@ -190,6 +196,7 @@ async function saveMember(e) {
         store.add({ name, data: encrypted.data, iv: encrypted.iv });
     request.onsuccess = async () => {
         const newId = numId ? numId : request.result;
+        await handlePendingRelation(newId);
         await refreshSelects();
         setCenter(newId);
         await renderTree();
@@ -244,6 +251,25 @@ async function getAllMembers() {
     }
 }
 
+async function getMember(id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('members', 'readonly');
+        const store = tx.objectStore('members');
+        const req = store.get(Number(id));
+        req.onsuccess = async () => {
+            if (!req.result) { resolve(null); return; }
+            const data = await decryptData(req.result);
+            data.id = req.result.id;
+            data.name = req.result.name;
+            data.fatherId = data.fatherId ? Number(data.fatherId) : null;
+            data.motherId = data.motherId ? Number(data.motherId) : null;
+            data.spouseId = data.spouseId ? Number(data.spouseId) : null;
+            resolve(data);
+        };
+        req.onerror = () => reject(req.error);
+    });
+}
+
 async function refreshSelects(excludeId) {
     const members = await getAllMembers();
     const fatherSel = document.getElementById('fatherSelect');
@@ -274,11 +300,87 @@ function createNode(member) {
     const div = document.createElement('div');
     div.className = 'member-node';
     div.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
-    div.addEventListener('click', () => {
-        loadMember(member);
-        setCenter(member.id);
-    });
+    div.addEventListener('click', () => handleNodeClick(member));
     return div;
+}
+
+function handleNodeClick(member) {
+    const action = prompt(i18n[currentLang].selectAction);
+    if (!action) return;
+    switch(action) {
+        case '1':
+            loadMember(member);
+            setCenter(member.id);
+            showSection('addMember');
+            break;
+        case '2': {
+            const role = prompt(i18n[currentLang].childParentPrompt);
+            if (role === 'f') prepareAddRelative(member, 'child-father');
+            else if (role === 'm') prepareAddRelative(member, 'child-mother');
+            break;
+        }
+        case '3':
+            prepareAddRelative(member, 'spouse');
+            break;
+        case '4':
+            prepareAddRelative(member, 'father');
+            break;
+        case '5':
+            prepareAddRelative(member, 'mother');
+            break;
+    }
+}
+
+function prepareAddRelative(member, relation) {
+    clearForm();
+    if (relation === 'child-father') {
+        document.getElementById('fatherSelect').value = member.id;
+        pendingRelation = null;
+        relatedMemberId = null;
+    } else if (relation === 'child-mother') {
+        document.getElementById('motherSelect').value = member.id;
+        pendingRelation = null;
+        relatedMemberId = null;
+    } else {
+        pendingRelation = relation;
+        relatedMemberId = member.id;
+        if (relation === 'spouse') {
+            document.getElementById('spouseSelect').value = member.id;
+        }
+    }
+    showSection('addMember');
+}
+
+async function handlePendingRelation(newId) {
+    if (!pendingRelation || !relatedMemberId) return;
+    const member = await getMember(relatedMemberId);
+    if (!member) {
+        pendingRelation = null;
+        relatedMemberId = null;
+        return;
+    }
+    switch (pendingRelation) {
+        case 'spouse':
+            member.spouseId = newId;
+            break;
+        case 'father':
+            member.fatherId = newId;
+            break;
+        case 'mother':
+            member.motherId = newId;
+            break;
+    }
+    const enc = await encryptData({
+        name: member.name,
+        birth: member.birth,
+        fatherId: member.fatherId,
+        motherId: member.motherId,
+        spouseId: member.spouseId
+    });
+    const tx = db.transaction('members', 'readwrite');
+    tx.objectStore('members').put({ id: member.id, name: member.name, data: enc.data, iv: enc.iv });
+    pendingRelation = null;
+    relatedMemberId = null;
 }
 
 function createConnector() {
@@ -379,6 +481,8 @@ function clearForm() {
     document.getElementById('memberId').value = '';
     document.getElementById('deleteBtn').disabled = true;
     document.getElementById('centerBtn').disabled = true;
+    pendingRelation = null;
+    relatedMemberId = null;
     refreshSelects();
     document.getElementById('name').focus();
 }
