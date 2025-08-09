@@ -156,8 +156,6 @@ async function saveMember(e) {
     const spouseId = document.getElementById('spouseSelect').value || null;
     const id = document.getElementById('memberId').value;
     const member = { name, birth, fatherId, motherId, spouseId };
-    const id = document.getElementById('memberId').value;
-    const member = { name, birth, fatherId, motherId };
     const encrypted = await encryptData(member);
     const tx = db.transaction('members', 'readwrite');
     const store = tx.objectStore('members');
@@ -390,8 +388,6 @@ async function importData(e) {
     for (const m of members) {
         const { name, birth, fatherId, motherId, spouseId } = m;
         const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
-        const { name, birth, fatherId, motherId } = m;
-        const encrypted = await encryptData({ name, birth, fatherId, motherId });
         const tx = db.transaction('members', 'readwrite');
         tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
     }
