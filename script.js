@@ -6,6 +6,10 @@ const i18n = {
         birth: 'Ngày sinh',
         father: 'Cha',
         mother: 'Mẹ',
+        spouse: 'Vợ/Chồng',
+        save: 'Lưu',
+        delete: 'Xóa',
+        setCenter: 'Chọn làm trung tâm',
         save: 'Lưu',
         delete: 'Xóa',
         tree: 'Cây gia phả',
@@ -23,6 +27,10 @@ const i18n = {
         birth: 'Birth Date',
         father: 'Father',
         mother: 'Mother',
+        spouse: 'Spouse',
+        save: 'Save',
+        delete: 'Delete',
+        setCenter: 'Set as center',
         save: 'Save',
         delete: 'Delete',
         tree: 'Family Tree',
@@ -37,6 +45,7 @@ const i18n = {
 
 let db;
 let cryptoKey;
+let centerId;
 
 async function init() {
     await initDB();
@@ -50,6 +59,11 @@ async function init() {
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
     document.getElementById('searchInput').addEventListener('input', renderTree);
+    document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
+    document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
+    centerId = Number(localStorage.getItem('centerId')) || null;
+    updateLanguage('vi');
+    setupNav();
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     updateLanguage('vi');
 
@@ -74,8 +88,6 @@ function setupNav() {
     });
     if (buttons.length) buttons[0].click();
 }
-
-
 
 function openDB() {
     return new Promise((resolve, reject) => {
@@ -141,6 +153,9 @@ async function saveMember(e) {
     const birth = document.getElementById('birth').value;
     const fatherId = document.getElementById('fatherSelect').value || null;
     const motherId = document.getElementById('motherSelect').value || null;
+    const spouseId = document.getElementById('spouseSelect').value || null;
+    const id = document.getElementById('memberId').value;
+    const member = { name, birth, fatherId, motherId, spouseId };
     const id = document.getElementById('memberId').value;
     const member = { name, birth, fatherId, motherId };
     const encrypted = await encryptData(member);
@@ -166,6 +181,10 @@ async function deleteMember() {
     const tx = db.transaction('members', 'readwrite');
     tx.objectStore('members').delete(Number(id));
     tx.oncomplete = async () => {
+        if (Number(id) === centerId) {
+            localStorage.removeItem('centerId');
+            centerId = null;
+        }
         await refreshSelects();
         await renderTree();
         updateStats();
@@ -196,6 +215,10 @@ async function refreshSelects() {
     const members = await getAllMembers();
     const fatherSel = document.getElementById('fatherSelect');
     const motherSel = document.getElementById('motherSelect');
+    const spouseSel = document.getElementById('spouseSelect');
+    fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
+    motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
+    spouseSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     for (const m of members) {
@@ -207,10 +230,88 @@ async function refreshSelects() {
         opt2.value = m.id;
         opt2.textContent = m.name;
         motherSel.appendChild(opt2);
+        const opt3 = document.createElement('option');
+        opt3.value = m.id;
+        opt3.textContent = m.name;
+        spouseSel.appendChild(opt3);
     }
     updateLanguage(document.getElementById('languageSelect').value);
 }
 
+function createNode(member) {
+    const div = document.createElement('div');
+    div.className = 'member-node';
+    div.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
+    div.addEventListener('click', () => {
+        loadMember(member);
+        setCenter(member.id);
+    });
+    return div;
+}
+
+async function renderTree() {
+    const members = await getAllMembers();
+    if (!members.length) return;
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    if (search) {
+        const found = members.find(m => m.name.toLowerCase().includes(search));
+        if (found) centerId = found.id;
+    }
+    if (!centerId || !members.find(m => m.id === centerId)) centerId = members[0].id;
+    localStorage.setItem('centerId', centerId);
+    const center = members.find(m => m.id === centerId);
+    const container = document.getElementById('tree');
+    container.innerHTML = '';
+    const tree = document.createElement('div');
+    tree.className = 'focus-tree';
+
+    const parents = document.createElement('div');
+    parents.className = 'parents';
+    if (center.fatherId) {
+        const father = members.find(m => m.id === center.fatherId);
+        if (father) parents.appendChild(createNode(father));
+    }
+    if (center.motherId) {
+        const mother = members.find(m => m.id === center.motherId);
+        if (mother) parents.appendChild(createNode(mother));
+    }
+    tree.appendChild(parents);
+
+    const centerRow = document.createElement('div');
+    centerRow.className = 'center-row';
+    const siblingsDiv = document.createElement('div');
+    siblingsDiv.className = 'siblings';
+    for (const s of members.filter(m => m.id !== center.id && ((m.fatherId && m.fatherId === center.fatherId) || (m.motherId && m.motherId === center.motherId)))) {
+        siblingsDiv.appendChild(createNode(s));
+    }
+    centerRow.appendChild(siblingsDiv);
+    const centerNode = createNode(center);
+    centerNode.classList.add('center');
+    centerRow.appendChild(centerNode);
+    const spousesDiv = document.createElement('div');
+    spousesDiv.className = 'spouses';
+    if (center.spouseId) {
+        const spouse = members.find(m => m.id === center.spouseId);
+        if (spouse) spousesDiv.appendChild(createNode(spouse));
+    }
+    centerRow.appendChild(spousesDiv);
+    tree.appendChild(centerRow);
+
+    const childrenDiv = document.createElement('div');
+    childrenDiv.className = 'children';
+    for (const c of members.filter(m => m.fatherId === center.id || m.motherId === center.id)) {
+        childrenDiv.appendChild(createNode(c));
+    }
+    tree.appendChild(childrenDiv);
+
+    container.appendChild(tree);
+}
+
+function setCenter(id) {
+    if (!id) return;
+    centerId = Number(id);
+    localStorage.setItem('centerId', centerId);
+    renderTree();
 function buildTree(nodes, parentId = null) {
     const ul = document.createElement('ul');
     for (const n of nodes.filter(m => m.fatherId == parentId || m.motherId == parentId)) {
@@ -249,6 +350,7 @@ function loadMember(member) {
     document.getElementById('birth').value = member.birth || '';
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
+    document.getElementById('spouseSelect').value = member.spouseId || '';
 }
 
 function updateStats() {
@@ -286,6 +388,8 @@ async function importData(e) {
     const text = await file.text();
     const members = JSON.parse(text);
     for (const m of members) {
+        const { name, birth, fatherId, motherId, spouseId } = m;
+        const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
         const { name, birth, fatherId, motherId } = m;
         const encrypted = await encryptData({ name, birth, fatherId, motherId });
         const tx = db.transaction('members', 'readwrite');

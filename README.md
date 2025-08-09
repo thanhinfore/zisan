@@ -4,8 +4,14 @@
 
 ## Tính năng
 
+- Giao diện tab hiện đại, responsive
+- Thêm, sửa, xóa thành viên và liên kết cha mẹ
+- Xem cây gia phả xoay quanh người dùng, hiển thị bố mẹ, vợ/chồng, con cái và anh chị em
+
+
 - Thêm, sửa, xóa thành viên và liên kết cha mẹ
 - Hiển thị cây gia phả đơn giản
+
 - Tìm kiếm nhanh theo tên
 - Xuất / nhập dữ liệu dạng JSON
 - Tạo mã QR đơn giản để chia sẻ nhanh

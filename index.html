@@ -14,7 +14,6 @@
         <option value="en">English</option>
     </select>
 </header>
-
 <nav id="mainNav">
     <button data-section="addMember" data-i18n="addMember">Thêm thành viên</button>
     <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
@@ -22,8 +21,6 @@
     <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
 </nav>
 <section id="addMember" class="panel">
-
-
     <h2 data-i18n="addMember">Thêm thành viên</h2>
     <form id="memberForm">
         <input type="hidden" id="memberId">
@@ -35,6 +32,15 @@
         <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
         <label for="motherSelect" data-i18n="mother">Mẹ</label>
         <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
+
+        <label for="spouseSelect" data-i18n="spouse">Vợ/Chồng</label>
+        <select id="spouseSelect"><option value="" data-i18n="none">--</option></select>
+        <button type="submit" data-i18n="save">Lưu</button>
+        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
+        <button type="button" id="centerBtn" data-i18n="setCenter">Chọn làm trung tâm</button>
+    </form>
+</section>
+
         <button type="submit" data-i18n="save">Lưu</button>
         <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
     </form>
