@@ -1,3 +1,4 @@
+
 :root {
     --primary: #4a90e2;
     --accent: #ed8936;
@@ -166,3 +167,15 @@ button:hover {
     }
 }
 
+=======
+body { font-family: Arial, sans-serif; margin: 0 auto; max-width: 960px; padding: 1rem; }
+header { display: flex; justify-content: space-between; align-items: center; }
+section { margin-top: 1.5rem; }
+form label { display: block; margin-top: 0.5rem; }
+#tree ul { list-style-type: none; }
+#tree li { margin-left: 1rem; position: relative; }
+#tree li::before { content: ''; position: absolute; left: -1rem; top: 0; border-left: 1px solid #ccc; border-bottom: 1px solid #ccc; width: 1rem; height: 1rem; }
+#tree li:first-child::before { border-top: 1px solid #ccc; }
+#tree { overflow: auto; max-height: 400px; border: 1px solid #ddd; padding: 0.5rem; }
+#qrContainer canvas { width: 200px; height: 200px; }
+@media (max-width: 600px) { body { padding: 0.5rem; } }

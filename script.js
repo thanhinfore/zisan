@@ -52,10 +52,14 @@ async function init() {
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     updateLanguage('vi');
+
     setupNav();
+
+
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
 
 function setupNav() {
     const buttons = document.querySelectorAll('#mainNav button');
@@ -70,6 +74,8 @@ function setupNav() {
     });
     if (buttons.length) buttons[0].click();
 }
+
+
 
 function openDB() {
     return new Promise((resolve, reject) => {

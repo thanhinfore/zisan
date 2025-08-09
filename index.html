@@ -14,6 +14,7 @@
         <option value="en">English</option>
     </select>
 </header>
+
 <nav id="mainNav">
     <button data-section="addMember" data-i18n="addMember">Thêm thành viên</button>
     <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
@@ -21,6 +22,9 @@
     <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
 </nav>
 <section id="addMember" class="panel">
+=======
+<section id="addMember">
+
     <h2 data-i18n="addMember">Thêm thành viên</h2>
     <form id="memberForm">
         <input type="hidden" id="memberId">
@@ -36,6 +40,7 @@
         <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
     </form>
 </section>
+
 <section id="treeSection" class="panel">
     <h2 data-i18n="tree">Cây gia phả</h2>
     <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
@@ -46,6 +51,20 @@
     <div id="stats"></div>
 </section>
 <section id="shareSection" class="panel">
+=======
+<section id="searchSection">
+    <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
+</section>
+<section id="treeSection">
+    <h2 data-i18n="tree">Cây gia phả</h2>
+    <div id="tree"></div>
+</section>
+<section id="statsSection">
+    <h2 data-i18n="stats">Thống kê</h2>
+    <div id="stats"></div>
+</section>
+<section id="shareSection">
+
     <h2 data-i18n="share">Chia sẻ</h2>
     <button id="exportBtn" data-i18n="export">Xuất JSON</button>
     <input type="file" id="importInput" accept="application/json">
