@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gia phả cá nhân</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+    <h1 data-i18n="title">Gia phả cá nhân</h1>
+    <select id="languageSelect">
+        <option value="vi">Tiếng Việt</option>
+        <option value="en">English</option>
+    </select>
+</header>
+<nav id="mainNav">
+    <button data-section="addMember" data-i18n="addMember">Thêm thành viên</button>
+    <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
+    <button data-section="statsSection" data-i18n="stats">Thống kê</button>
+    <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
+</nav>
+<section id="addMember" class="panel">
+    <h2 data-i18n="addMember">Thêm thành viên</h2>
+    <form id="memberForm">
+        <input type="hidden" id="memberId">
+        <label for="name" data-i18n="name">Họ tên</label>
+        <input type="text" id="name" required>
+        <label for="birth" data-i18n="birth">Ngày sinh</label>
+        <input type="date" id="birth">
+        <label for="fatherSelect" data-i18n="father">Cha</label>
+        <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
+        <label for="motherSelect" data-i18n="mother">Mẹ</label>
+        <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
+        <button type="submit" data-i18n="save">Lưu</button>
+        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
+    </form>
+</section>
+<section id="treeSection" class="panel">
+    <h2 data-i18n="tree">Cây gia phả</h2>
+    <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
+    <div id="tree"></div>
+</section>
+<section id="statsSection" class="panel">
+    <h2 data-i18n="stats">Thống kê</h2>
+    <div id="stats"></div>
+</section>
+<section id="shareSection" class="panel">
+    <h2 data-i18n="share">Chia sẻ</h2>
+    <button id="exportBtn" data-i18n="export">Xuất JSON</button>
+    <input type="file" id="importInput" accept="application/json">
+    <button id="qrBtn" data-i18n="qr">QR Code</button>
+    <div id="qrContainer"></div>
+</section>
+<script src="lib/qrcode.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
