@@ -1,10 +1,13 @@
 "use strict";
 
+const APP_VERSION = '3.0';
 const APP_VERSION = '2.0';
 
 const i18n = {
     vi: {
         title: 'Gia phả cá nhân',
+        home: 'Trang chủ',
+        welcome: 'Chào mừng! Bắt đầu bằng cách thêm thành viên đầu tiên.',
         addMember: 'Thêm thành viên',
         name: 'Họ tên',
         birth: 'Ngày sinh',
@@ -20,10 +23,14 @@ const i18n = {
         qr: 'QR Code',
         stats: 'Thống kê',
         search: 'Tìm kiếm...',
+        new: 'Thêm mới',
+        noMembers: 'Chưa có thành viên. Hãy thêm thành viên đầu tiên.',
         none: '--'
     },
     en: {
         title: 'Personal Genealogy',
+        home: 'Home',
+        welcome: 'Welcome! Start by adding your first member.',
         addMember: 'Add Member',
         name: 'Name',
         birth: 'Birth Date',
@@ -39,6 +46,8 @@ const i18n = {
         qr: 'QR Code',
         stats: 'Statistics',
         search: 'Search...',
+        new: 'New',
+        noMembers: 'No members yet. Add one to get started.',
         none: '--'
     }
 };
@@ -46,21 +55,31 @@ const i18n = {
 let db;
 let cryptoKey;
 let centerId;
+let currentLang;
 
 async function init() {
     await initDB();
     await initCrypto();
+    const savedLang = localStorage.getItem('lang') || 'vi';
+    document.getElementById('languageSelect').value = savedLang;
+    currentLang = savedLang;
+    centerId = Number(localStorage.getItem('centerId')) || null;
     await refreshSelects();
     await renderTree();
     updateStats();
     document.getElementById('memberForm').addEventListener('submit', saveMember);
     document.getElementById('deleteBtn').addEventListener('click', deleteMember);
+    document.getElementById('newBtn').addEventListener('click', clearForm);
     document.getElementById('exportBtn').addEventListener('click', exportData);
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
+    document.getElementById('version').textContent = 'v' + APP_VERSION;
+    updateLanguage(savedLang);
+    setupNav();
+    clearForm();
     const savedLang = localStorage.getItem('lang') || 'vi';
     document.getElementById('languageSelect').value = savedLang;
     centerId = Number(localStorage.getItem('centerId')) || null;
@@ -72,18 +91,17 @@ async function init() {
 document.addEventListener('DOMContentLoaded', init);
 
 
-function setupNav() {
+function showSection(id) {
     const buttons = document.querySelectorAll('#mainNav button');
     const sections = document.querySelectorAll('section.panel');
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            buttons.forEach(b => b.classList.remove('active'));
-            sections.forEach(s => s.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.section).classList.add('active');
-        });
-    });
-    if (buttons.length) buttons[0].click();
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.section === id));
+    sections.forEach(s => s.classList.toggle('active', s.id === id));
+}
+
+function setupNav() {
+    const buttons = document.querySelectorAll('#mainNav button');
+    buttons.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    if (buttons.length) showSection(buttons[0].dataset.section);
 }
 
 function openDB() {
@@ -156,17 +174,17 @@ async function saveMember(e) {
     const encrypted = await encryptData(member);
     const tx = db.transaction('members', 'readwrite');
     const store = tx.objectStore('members');
-    if (id) {
-        store.put({ id: Number(id), name, data: encrypted.data, iv: encrypted.iv });
-    } else {
+    const request = id ?
+        store.put({ id: Number(id), name, data: encrypted.data, iv: encrypted.iv }) :
         store.add({ name, data: encrypted.data, iv: encrypted.iv });
-    }
-    tx.oncomplete = async () => {
+    request.onsuccess = async () => {
+        const newId = id ? Number(id) : request.result;
         await refreshSelects();
+        setCenter(newId);
         await renderTree();
         updateStats();
-        e.target.reset();
-        document.getElementById('memberId').value = '';
+        clearForm();
+        showSection('treeSection');
     };
 }
 
@@ -183,8 +201,8 @@ async function deleteMember() {
         await refreshSelects();
         await renderTree();
         updateStats();
-        document.getElementById('memberForm').reset();
-        document.getElementById('memberId').value = '';
+        clearForm();
+        showSection('treeSection');
     };
 }
 
@@ -250,7 +268,11 @@ function createNode(member) {
 
 async function renderTree() {
     const members = await getAllMembers();
-    if (!members.length) return;
+    const container = document.getElementById('tree');
+    if (!members.length) {
+        container.textContent = i18n[currentLang].noMembers;
+        return;
+    }
     const search = document.getElementById('searchInput').value.toLowerCase();
     if (search) {
         const found = members.find(m => m.name.toLowerCase().includes(search));
@@ -259,7 +281,6 @@ async function renderTree() {
     if (!centerId || !members.find(m => m.id === centerId)) centerId = members[0].id;
     localStorage.setItem('centerId', centerId);
     const center = members.find(m => m.id === centerId);
-    const container = document.getElementById('tree');
     container.innerHTML = '';
     const tree = document.createElement('div');
     tree.className = 'focus-tree';
@@ -320,6 +341,16 @@ function loadMember(member) {
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
     document.getElementById('spouseSelect').value = member.spouseId || '';
+    document.getElementById('deleteBtn').disabled = false;
+    document.getElementById('centerBtn').disabled = false;
+}
+
+function clearForm() {
+    const form = document.getElementById('memberForm');
+    form.reset();
+    document.getElementById('memberId').value = '';
+    document.getElementById('deleteBtn').disabled = true;
+    document.getElementById('centerBtn').disabled = true;
 }
 
 function updateStats() {
@@ -383,6 +414,7 @@ async function showQR() {
 }
 
 function updateLanguage(lang) {
+    currentLang = lang;
     const strings = i18n[lang];
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -393,4 +425,5 @@ function updateLanguage(lang) {
         el.setAttribute('placeholder', strings[key]);
     });
     localStorage.setItem('lang', lang);
+    renderTree();
 }

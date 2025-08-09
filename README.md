@@ -2,6 +2,12 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 3.0
+
+- Trang chủ với hướng dẫn sử dụng giúp bắt đầu nhanh
+- Nút "Thêm mới" và vô hiệu hóa thao tác khi chưa chọn thành viên
+- Tự chuyển sang cây và hiển thị thông báo khi chưa có dữ liệu
+
 ## Phiên bản 2.0
 
 - Ghi nhớ ngôn ngữ đã chọn giữa các lần sử dụng

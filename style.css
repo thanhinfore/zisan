@@ -125,6 +125,11 @@ button:hover {
     background: var(--accent);
 }
 
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 #treeSection input {
     margin-bottom: 0.5rem;
 }
