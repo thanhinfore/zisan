@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '4.0';
+const APP_VERSION = '5.0';
 
 const i18n = {
     vi: {
@@ -25,7 +25,9 @@ const i18n = {
         new: 'Thêm mới',
         noMembers: 'Chưa có thành viên. Hãy thêm thành viên đầu tiên.',
         none: '--',
-        namePlaceholder: 'Nhập họ tên'
+        namePlaceholder: 'Nhập họ tên',
+        nameRequired: 'Vui lòng nhập họ tên.',
+        invalidRelation: 'Không thể chọn bản thân làm cha, mẹ hoặc vợ/chồng.'
     },
     en: {
         title: 'Personal Genealogy',
@@ -49,7 +51,9 @@ const i18n = {
         new: 'New',
         noMembers: 'No members yet. Add one to get started.',
         none: '--',
-        namePlaceholder: 'Enter full name'
+        namePlaceholder: 'Enter full name',
+        nameRequired: 'Please enter a name.',
+        invalidRelation: 'A member cannot be their own parent or spouse.'
     }
 };
 
@@ -159,21 +163,30 @@ async function decryptData(record) {
 
 async function saveMember(e) {
     e.preventDefault();
-    const name = document.getElementById('name').value;
+    const name = document.getElementById('name').value.trim();
+    if (!name) {
+        alert(i18n[currentLang].nameRequired);
+        return;
+    }
     const birth = document.getElementById('birth').value;
-    const fatherId = document.getElementById('fatherSelect').value || null;
-    const motherId = document.getElementById('motherSelect').value || null;
-    const spouseId = document.getElementById('spouseSelect').value || null;
+    const fatherId = parseInt(document.getElementById('fatherSelect').value) || null;
+    const motherId = parseInt(document.getElementById('motherSelect').value) || null;
+    const spouseId = parseInt(document.getElementById('spouseSelect').value) || null;
     const id = document.getElementById('memberId').value;
+    const numId = id ? Number(id) : null;
+    if (numId && (fatherId === numId || motherId === numId || spouseId === numId)) {
+        alert(i18n[currentLang].invalidRelation);
+        return;
+    }
     const member = { name, birth, fatherId, motherId, spouseId };
     const encrypted = await encryptData(member);
     const tx = db.transaction('members', 'readwrite');
     const store = tx.objectStore('members');
     const request = id ?
-        store.put({ id: Number(id), name, data: encrypted.data, iv: encrypted.iv }) :
+        store.put({ id: numId, name, data: encrypted.data, iv: encrypted.iv }) :
         store.add({ name, data: encrypted.data, iv: encrypted.iv });
     request.onsuccess = async () => {
-        const newId = id ? Number(id) : request.result;
+        const newId = numId ? numId : request.result;
         await refreshSelects();
         setCenter(newId);
         await renderTree();
@@ -213,6 +226,9 @@ async function getAllMembers() {
                     const data = await decryptData(r);
                     data.id = r.id;
                     data.name = r.name;
+                    data.fatherId = data.fatherId ? Number(data.fatherId) : null;
+                    data.motherId = data.motherId ? Number(data.motherId) : null;
+                    data.spouseId = data.spouseId ? Number(data.spouseId) : null;
                     decrypted.push(data);
                 }
                 resolve(decrypted);
@@ -225,7 +241,7 @@ async function getAllMembers() {
     }
 }
 
-async function refreshSelects() {
+async function refreshSelects(excludeId) {
     const members = await getAllMembers();
     const fatherSel = document.getElementById('fatherSelect');
     const motherSel = document.getElementById('motherSelect');
@@ -234,6 +250,7 @@ async function refreshSelects() {
     motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     spouseSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     for (const m of members) {
+        if (excludeId && m.id === excludeId) continue;
         const opt1 = document.createElement('option');
         opt1.value = m.id;
         opt1.textContent = m.name;
@@ -259,6 +276,12 @@ function createNode(member) {
         setCenter(member.id);
     });
     return div;
+}
+
+function createConnector() {
+    const line = document.createElement('div');
+    line.className = 'connector';
+    return line;
 }
 
 async function renderTree() {
@@ -290,13 +313,16 @@ async function renderTree() {
         const mother = members.find(m => m.id === center.motherId);
         if (mother) parents.appendChild(createNode(mother));
     }
-    tree.appendChild(parents);
+    if (parents.children.length) {
+        tree.appendChild(parents);
+        tree.appendChild(createConnector());
+    }
 
     const centerRow = document.createElement('div');
     centerRow.className = 'center-row';
     const siblingsDiv = document.createElement('div');
     siblingsDiv.className = 'siblings';
-    for (const s of members.filter(m => m.id !== center.id && ((m.fatherId && m.fatherId === center.fatherId) || (m.motherId && m.motherId === center.motherId)))) {
+    for (const s of members.filter(m => m.id !== center.id && ((m.fatherId && m.fatherId === center.fatherId) || (m.motherId && m.motherId === center.motherId))).sort((a,b) => a.name.localeCompare(b.name))) {
         siblingsDiv.appendChild(createNode(s));
     }
     centerRow.appendChild(siblingsDiv);
@@ -314,10 +340,13 @@ async function renderTree() {
 
     const childrenDiv = document.createElement('div');
     childrenDiv.className = 'children';
-    for (const c of members.filter(m => m.fatherId === center.id || m.motherId === center.id)) {
+    for (const c of members.filter(m => m.fatherId === center.id || m.motherId === center.id).sort((a,b) => a.name.localeCompare(b.name))) {
         childrenDiv.appendChild(createNode(c));
     }
-    tree.appendChild(childrenDiv);
+    if (childrenDiv.children.length) {
+        tree.appendChild(createConnector());
+        tree.appendChild(childrenDiv);
+    }
 
     container.appendChild(tree);
 }
@@ -329,7 +358,8 @@ function setCenter(id) {
     renderTree();
 }
 
-function loadMember(member) {
+async function loadMember(member) {
+    await refreshSelects(member.id);
     document.getElementById('memberId').value = member.id;
     document.getElementById('name').value = member.name;
     document.getElementById('birth').value = member.birth || '';
@@ -346,6 +376,8 @@ function clearForm() {
     document.getElementById('memberId').value = '';
     document.getElementById('deleteBtn').disabled = true;
     document.getElementById('centerBtn').disabled = true;
+    refreshSelects();
+    document.getElementById('name').focus();
 }
 
 function updateStats() {

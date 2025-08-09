@@ -2,6 +2,12 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 5.0
+
+- Sửa lỗi nhập liệu và ngăn chọn bản thân làm quan hệ
+- Tự động focus vào ô tên khi thêm mới, trải nghiệm tốt hơn
+- Cải thiện hiển thị cây gia phả với đường nối trực quan
+
 ## Phiên bản 4.0
 
 - Sửa các lỗi trùng lặp sau khi hợp nhất mã nguồn
