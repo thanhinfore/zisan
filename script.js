@@ -1,3 +1,7 @@
+"use strict";
+
+const APP_VERSION = '2.0';
+
 const i18n = {
     vi: {
         title: 'Gia phả cá nhân',
@@ -10,8 +14,6 @@ const i18n = {
         save: 'Lưu',
         delete: 'Xóa',
         setCenter: 'Chọn làm trung tâm',
-        save: 'Lưu',
-        delete: 'Xóa',
         tree: 'Cây gia phả',
         share: 'Chia sẻ',
         export: 'Xuất JSON',
@@ -31,8 +33,6 @@ const i18n = {
         save: 'Save',
         delete: 'Delete',
         setCenter: 'Set as center',
-        save: 'Save',
-        delete: 'Delete',
         tree: 'Family Tree',
         share: 'Share',
         export: 'Export JSON',
@@ -61,15 +61,12 @@ async function init() {
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
+    const savedLang = localStorage.getItem('lang') || 'vi';
+    document.getElementById('languageSelect').value = savedLang;
     centerId = Number(localStorage.getItem('centerId')) || null;
-    updateLanguage('vi');
+    document.getElementById('version').textContent = 'v' + APP_VERSION;
+    updateLanguage(savedLang);
     setupNav();
-    document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
-    updateLanguage('vi');
-
-    setupNav();
-
-
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -192,21 +189,27 @@ async function deleteMember() {
 }
 
 async function getAllMembers() {
-    return new Promise(resolve => {
-        const tx = db.transaction('members', 'readonly');
-        const store = tx.objectStore('members');
-        const req = store.getAll();
-        req.onsuccess = async () => {
-            const decrypted = [];
-            for (const r of req.result) {
-                const data = await decryptData(r);
-                data.id = r.id;
-                data.name = r.name;
-                decrypted.push(data);
-            }
-            resolve(decrypted);
-        };
-    });
+    try {
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction('members', 'readonly');
+            const store = tx.objectStore('members');
+            const req = store.getAll();
+            req.onsuccess = async () => {
+                const decrypted = [];
+                for (const r of req.result) {
+                    const data = await decryptData(r);
+                    data.id = r.id;
+                    data.name = r.name;
+                    decrypted.push(data);
+                }
+                resolve(decrypted);
+            };
+            req.onerror = () => reject(req.error);
+        });
+    } catch (err) {
+        console.error('Failed to load members', err);
+        return [];
+    }
 }
 
 async function refreshSelects() {
@@ -217,8 +220,6 @@ async function refreshSelects() {
     fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     spouseSel.innerHTML = '<option value="" data-i18n="none">--</option>';
-    fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
-    motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     for (const m of members) {
         const opt1 = document.createElement('option');
         opt1.value = m.id;
@@ -310,36 +311,6 @@ function setCenter(id) {
     centerId = Number(id);
     localStorage.setItem('centerId', centerId);
     renderTree();
-function buildTree(nodes, parentId = null) {
-    const ul = document.createElement('ul');
-    for (const n of nodes.filter(m => m.fatherId == parentId || m.motherId == parentId)) {
-        const li = document.createElement('li');
-        li.textContent = n.name + (n.birth ? ` (${n.birth})` : '');
-        const children = buildTree(nodes, n.id);
-        if (children.childElementCount) li.appendChild(children);
-        li.addEventListener('click', () => loadMember(n));
-        ul.appendChild(li);
-    }
-    return ul;
-}
-
-async function renderTree() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const members = await getAllMembers();
-    const rootMembers = members.filter(m => !m.fatherId && !m.motherId);
-    const container = document.getElementById('tree');
-    container.innerHTML = '';
-    for (const root of rootMembers) {
-        if (search && !root.name.toLowerCase().includes(search)) continue;
-        const li = document.createElement('li');
-        li.textContent = root.name;
-        li.addEventListener('click', () => loadMember(root));
-        const ul = buildTree(members, root.id);
-        if (ul.childElementCount) li.appendChild(ul);
-        const wrap = document.createElement('ul');
-        wrap.appendChild(li);
-        container.appendChild(wrap);
-    }
 }
 
 function loadMember(member) {
@@ -383,18 +354,24 @@ async function exportData() {
 async function importData(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const members = JSON.parse(text);
-    for (const m of members) {
-        const { name, birth, fatherId, motherId, spouseId } = m;
-        const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
-        const tx = db.transaction('members', 'readwrite');
-        tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+    try {
+        const text = await file.text();
+        const members = JSON.parse(text);
+        for (const m of members) {
+            const { name, birth, fatherId, motherId, spouseId } = m;
+            const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+            const tx = db.transaction('members', 'readwrite');
+            tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+        }
+        await refreshSelects();
+        await renderTree();
+        updateStats();
+    } catch (err) {
+        alert('Import failed: ' + err.message);
+        console.error(err);
+    } finally {
+        e.target.value = '';
     }
-    e.target.value = '';
-    await refreshSelects();
-    await renderTree();
-    updateStats();
 }
 
 async function showQR() {
@@ -415,4 +392,5 @@ function updateLanguage(lang) {
         const key = el.getAttribute('data-i18n-placeholder');
         el.setAttribute('placeholder', strings[key]);
     });
+    localStorage.setItem('lang', lang);
 }
