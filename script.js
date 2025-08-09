@@ -1,6 +1,12 @@
+"use strict";
+
+const APP_VERSION = '3.0';
+
 const i18n = {
     vi: {
         title: 'Gia phả cá nhân',
+        home: 'Trang chủ',
+        welcome: 'Chào mừng! Bắt đầu bằng cách thêm thành viên đầu tiên.',
         addMember: 'Thêm thành viên',
         name: 'Họ tên',
         birth: 'Ngày sinh',
@@ -10,18 +16,20 @@ const i18n = {
         save: 'Lưu',
         delete: 'Xóa',
         setCenter: 'Chọn làm trung tâm',
-        save: 'Lưu',
-        delete: 'Xóa',
         tree: 'Cây gia phả',
         share: 'Chia sẻ',
         export: 'Xuất JSON',
         qr: 'QR Code',
         stats: 'Thống kê',
         search: 'Tìm kiếm...',
+        new: 'Thêm mới',
+        noMembers: 'Chưa có thành viên. Hãy thêm thành viên đầu tiên.',
         none: '--'
     },
     en: {
         title: 'Personal Genealogy',
+        home: 'Home',
+        welcome: 'Welcome! Start by adding your first member.',
         addMember: 'Add Member',
         name: 'Name',
         birth: 'Birth Date',
@@ -31,14 +39,14 @@ const i18n = {
         save: 'Save',
         delete: 'Delete',
         setCenter: 'Set as center',
-        save: 'Save',
-        delete: 'Delete',
         tree: 'Family Tree',
         share: 'Share',
         export: 'Export JSON',
         qr: 'QR Code',
         stats: 'Statistics',
         search: 'Search...',
+        new: 'New',
+        noMembers: 'No members yet. Add one to get started.',
         none: '--'
     }
 };
@@ -46,47 +54,47 @@ const i18n = {
 let db;
 let cryptoKey;
 let centerId;
+let currentLang;
 
 async function init() {
     await initDB();
     await initCrypto();
+    const savedLang = localStorage.getItem('lang') || 'vi';
+    document.getElementById('languageSelect').value = savedLang;
+    currentLang = savedLang;
+    centerId = Number(localStorage.getItem('centerId')) || null;
     await refreshSelects();
     await renderTree();
     updateStats();
     document.getElementById('memberForm').addEventListener('submit', saveMember);
     document.getElementById('deleteBtn').addEventListener('click', deleteMember);
+    document.getElementById('newBtn').addEventListener('click', clearForm);
     document.getElementById('exportBtn').addEventListener('click', exportData);
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
-    centerId = Number(localStorage.getItem('centerId')) || null;
-    updateLanguage('vi');
+    document.getElementById('version').textContent = 'v' + APP_VERSION;
+    updateLanguage(savedLang);
     setupNav();
-    document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
-    updateLanguage('vi');
-
-    setupNav();
-
-
+    clearForm();
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
 
-function setupNav() {
+function showSection(id) {
     const buttons = document.querySelectorAll('#mainNav button');
     const sections = document.querySelectorAll('section.panel');
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            buttons.forEach(b => b.classList.remove('active'));
-            sections.forEach(s => s.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.section).classList.add('active');
-        });
-    });
-    if (buttons.length) buttons[0].click();
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.section === id));
+    sections.forEach(s => s.classList.toggle('active', s.id === id));
+}
+
+function setupNav() {
+    const buttons = document.querySelectorAll('#mainNav button');
+    buttons.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    if (buttons.length) showSection(buttons[0].dataset.section);
 }
 
 function openDB() {
@@ -159,17 +167,17 @@ async function saveMember(e) {
     const encrypted = await encryptData(member);
     const tx = db.transaction('members', 'readwrite');
     const store = tx.objectStore('members');
-    if (id) {
-        store.put({ id: Number(id), name, data: encrypted.data, iv: encrypted.iv });
-    } else {
+    const request = id ?
+        store.put({ id: Number(id), name, data: encrypted.data, iv: encrypted.iv }) :
         store.add({ name, data: encrypted.data, iv: encrypted.iv });
-    }
-    tx.oncomplete = async () => {
+    request.onsuccess = async () => {
+        const newId = id ? Number(id) : request.result;
         await refreshSelects();
+        setCenter(newId);
         await renderTree();
         updateStats();
-        e.target.reset();
-        document.getElementById('memberId').value = '';
+        clearForm();
+        showSection('treeSection');
     };
 }
 
@@ -186,27 +194,33 @@ async function deleteMember() {
         await refreshSelects();
         await renderTree();
         updateStats();
-        document.getElementById('memberForm').reset();
-        document.getElementById('memberId').value = '';
+        clearForm();
+        showSection('treeSection');
     };
 }
 
 async function getAllMembers() {
-    return new Promise(resolve => {
-        const tx = db.transaction('members', 'readonly');
-        const store = tx.objectStore('members');
-        const req = store.getAll();
-        req.onsuccess = async () => {
-            const decrypted = [];
-            for (const r of req.result) {
-                const data = await decryptData(r);
-                data.id = r.id;
-                data.name = r.name;
-                decrypted.push(data);
-            }
-            resolve(decrypted);
-        };
-    });
+    try {
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction('members', 'readonly');
+            const store = tx.objectStore('members');
+            const req = store.getAll();
+            req.onsuccess = async () => {
+                const decrypted = [];
+                for (const r of req.result) {
+                    const data = await decryptData(r);
+                    data.id = r.id;
+                    data.name = r.name;
+                    decrypted.push(data);
+                }
+                resolve(decrypted);
+            };
+            req.onerror = () => reject(req.error);
+        });
+    } catch (err) {
+        console.error('Failed to load members', err);
+        return [];
+    }
 }
 
 async function refreshSelects() {
@@ -217,8 +231,6 @@ async function refreshSelects() {
     fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     spouseSel.innerHTML = '<option value="" data-i18n="none">--</option>';
-    fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
-    motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     for (const m of members) {
         const opt1 = document.createElement('option');
         opt1.value = m.id;
@@ -249,7 +261,11 @@ function createNode(member) {
 
 async function renderTree() {
     const members = await getAllMembers();
-    if (!members.length) return;
+    const container = document.getElementById('tree');
+    if (!members.length) {
+        container.textContent = i18n[currentLang].noMembers;
+        return;
+    }
     const search = document.getElementById('searchInput').value.toLowerCase();
     if (search) {
         const found = members.find(m => m.name.toLowerCase().includes(search));
@@ -258,7 +274,6 @@ async function renderTree() {
     if (!centerId || !members.find(m => m.id === centerId)) centerId = members[0].id;
     localStorage.setItem('centerId', centerId);
     const center = members.find(m => m.id === centerId);
-    const container = document.getElementById('tree');
     container.innerHTML = '';
     const tree = document.createElement('div');
     tree.className = 'focus-tree';
@@ -310,36 +325,6 @@ function setCenter(id) {
     centerId = Number(id);
     localStorage.setItem('centerId', centerId);
     renderTree();
-function buildTree(nodes, parentId = null) {
-    const ul = document.createElement('ul');
-    for (const n of nodes.filter(m => m.fatherId == parentId || m.motherId == parentId)) {
-        const li = document.createElement('li');
-        li.textContent = n.name + (n.birth ? ` (${n.birth})` : '');
-        const children = buildTree(nodes, n.id);
-        if (children.childElementCount) li.appendChild(children);
-        li.addEventListener('click', () => loadMember(n));
-        ul.appendChild(li);
-    }
-    return ul;
-}
-
-async function renderTree() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const members = await getAllMembers();
-    const rootMembers = members.filter(m => !m.fatherId && !m.motherId);
-    const container = document.getElementById('tree');
-    container.innerHTML = '';
-    for (const root of rootMembers) {
-        if (search && !root.name.toLowerCase().includes(search)) continue;
-        const li = document.createElement('li');
-        li.textContent = root.name;
-        li.addEventListener('click', () => loadMember(root));
-        const ul = buildTree(members, root.id);
-        if (ul.childElementCount) li.appendChild(ul);
-        const wrap = document.createElement('ul');
-        wrap.appendChild(li);
-        container.appendChild(wrap);
-    }
 }
 
 function loadMember(member) {
@@ -349,6 +334,16 @@ function loadMember(member) {
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
     document.getElementById('spouseSelect').value = member.spouseId || '';
+    document.getElementById('deleteBtn').disabled = false;
+    document.getElementById('centerBtn').disabled = false;
+}
+
+function clearForm() {
+    const form = document.getElementById('memberForm');
+    form.reset();
+    document.getElementById('memberId').value = '';
+    document.getElementById('deleteBtn').disabled = true;
+    document.getElementById('centerBtn').disabled = true;
 }
 
 function updateStats() {
@@ -383,18 +378,24 @@ async function exportData() {
 async function importData(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const members = JSON.parse(text);
-    for (const m of members) {
-        const { name, birth, fatherId, motherId, spouseId } = m;
-        const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
-        const tx = db.transaction('members', 'readwrite');
-        tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+    try {
+        const text = await file.text();
+        const members = JSON.parse(text);
+        for (const m of members) {
+            const { name, birth, fatherId, motherId, spouseId } = m;
+            const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+            const tx = db.transaction('members', 'readwrite');
+            tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+        }
+        await refreshSelects();
+        await renderTree();
+        updateStats();
+    } catch (err) {
+        alert('Import failed: ' + err.message);
+        console.error(err);
+    } finally {
+        e.target.value = '';
     }
-    e.target.value = '';
-    await refreshSelects();
-    await renderTree();
-    updateStats();
 }
 
 async function showQR() {
@@ -406,6 +407,7 @@ async function showQR() {
 }
 
 function updateLanguage(lang) {
+    currentLang = lang;
     const strings = i18n[lang];
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -415,4 +417,6 @@ function updateLanguage(lang) {
         const key = el.getAttribute('data-i18n-placeholder');
         el.setAttribute('placeholder', strings[key]);
     });
+    localStorage.setItem('lang', lang);
+    renderTree();
 }

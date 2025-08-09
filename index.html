@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="3.0">
     <title>Gia phả cá nhân</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
-    <h1 data-i18n="title">Gia phả cá nhân</h1>
+    <div class="title">
+        <h1 data-i18n="title">Gia phả cá nhân</h1>
+        <span id="version" class="version"></span>
+    </div>
     <select id="languageSelect">
         <option value="vi">Tiếng Việt</option>
         <option value="en">English</option>
     </select>
 </header>
 <nav id="mainNav">
+    <button data-section="homeSection" data-i18n="home">Trang chủ</button>
     <button data-section="addMember" data-i18n="addMember">Thêm thành viên</button>
     <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
     <button data-section="statsSection" data-i18n="stats">Thống kê</button>
     <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
 </nav>
+<section id="homeSection" class="panel">
+    <h2 data-i18n="home">Trang chủ</h2>
+    <p data-i18n="welcome">Chào mừng! Bắt đầu bằng cách thêm thành viên đầu tiên.</p>
+</section>
 <section id="addMember" class="panel">
     <h2 data-i18n="addMember">Thêm thành viên</h2>
     <form id="memberForm">
@@ -32,20 +41,14 @@
         <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
         <label for="motherSelect" data-i18n="mother">Mẹ</label>
         <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
-
         <label for="spouseSelect" data-i18n="spouse">Vợ/Chồng</label>
         <select id="spouseSelect"><option value="" data-i18n="none">--</option></select>
+        <button type="button" id="newBtn" data-i18n="new">Thêm mới</button>
         <button type="submit" data-i18n="save">Lưu</button>
-        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
-        <button type="button" id="centerBtn" data-i18n="setCenter">Chọn làm trung tâm</button>
+        <button type="button" id="deleteBtn" data-i18n="delete" disabled>Xóa</button>
+        <button type="button" id="centerBtn" data-i18n="setCenter" disabled>Chọn làm trung tâm</button>
     </form>
 </section>
-
-        <button type="submit" data-i18n="save">Lưu</button>
-        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
-    </form>
-</section>
-
 <section id="treeSection" class="panel">
     <h2 data-i18n="tree">Cây gia phả</h2>
     <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
@@ -56,19 +59,6 @@
     <div id="stats"></div>
 </section>
 <section id="shareSection" class="panel">
-
-    <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
-</section>
-<section id="treeSection">
-    <h2 data-i18n="tree">Cây gia phả</h2>
-    <div id="tree"></div>
-</section>
-<section id="statsSection">
-    <h2 data-i18n="stats">Thống kê</h2>
-    <div id="stats"></div>
-</section>
-<section id="shareSection">
-
     <h2 data-i18n="share">Chia sẻ</h2>
     <button id="exportBtn" data-i18n="export">Xuất JSON</button>
     <input type="file" id="importInput" accept="application/json">
