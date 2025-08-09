@@ -2,6 +2,11 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 5.1
+
+- Tự làm sạch biểu mẫu khi vào mục thêm thành viên, không cần chọn trong cây
+- Nâng cấp phiên bản ứng dụng và sửa lỗi thêm mới
+
 ## Phiên bản 5.0
 
 - Sửa lỗi nhập liệu và ngăn chọn bản thân làm quan hệ

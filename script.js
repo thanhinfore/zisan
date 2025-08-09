@@ -1,5 +1,6 @@
 "use strict";
 
+const APP_VERSION = '5.1';
 const APP_VERSION = '5.0';
 
 const i18n = {
@@ -99,7 +100,10 @@ function showSection(id) {
 
 function setupNav() {
     const buttons = document.querySelectorAll('#mainNav button');
-    buttons.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    buttons.forEach(btn => btn.addEventListener('click', () => {
+        showSection(btn.dataset.section);
+        if (btn.dataset.section === 'addMember') clearForm();
+    }));
     if (buttons.length) showSection(buttons[0].dataset.section);
 }
 
