@@ -10,6 +10,8 @@ const i18n = {
         save: 'Lưu',
         delete: 'Xóa',
         setCenter: 'Chọn làm trung tâm',
+        save: 'Lưu',
+        delete: 'Xóa',
         tree: 'Cây gia phả',
         share: 'Chia sẻ',
         export: 'Xuất JSON',
@@ -29,6 +31,8 @@ const i18n = {
         save: 'Save',
         delete: 'Delete',
         setCenter: 'Set as center',
+        save: 'Save',
+        delete: 'Delete',
         tree: 'Family Tree',
         share: 'Share',
         export: 'Export JSON',
@@ -60,9 +64,16 @@ async function init() {
     centerId = Number(localStorage.getItem('centerId')) || null;
     updateLanguage('vi');
     setupNav();
+    document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
+    updateLanguage('vi');
+
+    setupNav();
+
+
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
 
 function setupNav() {
     const buttons = document.querySelectorAll('#mainNav button');
@@ -145,6 +156,8 @@ async function saveMember(e) {
     const spouseId = document.getElementById('spouseSelect').value || null;
     const id = document.getElementById('memberId').value;
     const member = { name, birth, fatherId, motherId, spouseId };
+    const id = document.getElementById('memberId').value;
+    const member = { name, birth, fatherId, motherId };
     const encrypted = await encryptData(member);
     const tx = db.transaction('members', 'readwrite');
     const store = tx.objectStore('members');
@@ -206,6 +219,8 @@ async function refreshSelects() {
     fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     spouseSel.innerHTML = '<option value="" data-i18n="none">--</option>';
+    fatherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
+    motherSel.innerHTML = '<option value="" data-i18n="none">--</option>';
     for (const m of members) {
         const opt1 = document.createElement('option');
         opt1.value = m.id;
@@ -297,6 +312,36 @@ function setCenter(id) {
     centerId = Number(id);
     localStorage.setItem('centerId', centerId);
     renderTree();
+function buildTree(nodes, parentId = null) {
+    const ul = document.createElement('ul');
+    for (const n of nodes.filter(m => m.fatherId == parentId || m.motherId == parentId)) {
+        const li = document.createElement('li');
+        li.textContent = n.name + (n.birth ? ` (${n.birth})` : '');
+        const children = buildTree(nodes, n.id);
+        if (children.childElementCount) li.appendChild(children);
+        li.addEventListener('click', () => loadMember(n));
+        ul.appendChild(li);
+    }
+    return ul;
+}
+
+async function renderTree() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const members = await getAllMembers();
+    const rootMembers = members.filter(m => !m.fatherId && !m.motherId);
+    const container = document.getElementById('tree');
+    container.innerHTML = '';
+    for (const root of rootMembers) {
+        if (search && !root.name.toLowerCase().includes(search)) continue;
+        const li = document.createElement('li');
+        li.textContent = root.name;
+        li.addEventListener('click', () => loadMember(root));
+        const ul = buildTree(members, root.id);
+        if (ul.childElementCount) li.appendChild(ul);
+        const wrap = document.createElement('ul');
+        wrap.appendChild(li);
+        container.appendChild(wrap);
+    }
 }
 
 function loadMember(member) {
@@ -345,6 +390,8 @@ async function importData(e) {
     for (const m of members) {
         const { name, birth, fatherId, motherId, spouseId } = m;
         const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+        const { name, birth, fatherId, motherId } = m;
+        const encrypted = await encryptData({ name, birth, fatherId, motherId });
         const tx = db.transaction('members', 'readwrite');
         tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
     }

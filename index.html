@@ -32,6 +32,7 @@
         <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
         <label for="motherSelect" data-i18n="mother">Mẹ</label>
         <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
+
         <label for="spouseSelect" data-i18n="spouse">Vợ/Chồng</label>
         <select id="spouseSelect"><option value="" data-i18n="none">--</option></select>
         <button type="submit" data-i18n="save">Lưu</button>
@@ -39,6 +40,12 @@
         <button type="button" id="centerBtn" data-i18n="setCenter">Chọn làm trung tâm</button>
     </form>
 </section>
+
+        <button type="submit" data-i18n="save">Lưu</button>
+        <button type="button" id="deleteBtn" data-i18n="delete">Xóa</button>
+    </form>
+</section>
+
 <section id="treeSection" class="panel">
     <h2 data-i18n="tree">Cây gia phả</h2>
     <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
@@ -49,6 +56,19 @@
     <div id="stats"></div>
 </section>
 <section id="shareSection" class="panel">
+
+    <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
+</section>
+<section id="treeSection">
+    <h2 data-i18n="tree">Cây gia phả</h2>
+    <div id="tree"></div>
+</section>
+<section id="statsSection">
+    <h2 data-i18n="stats">Thống kê</h2>
+    <div id="stats"></div>
+</section>
+<section id="shareSection">
+
     <h2 data-i18n="share">Chia sẻ</h2>
     <button id="exportBtn" data-i18n="export">Xuất JSON</button>
     <input type="file" id="importInput" accept="application/json">
