@@ -1,6 +1,7 @@
 "use strict";
 
 const APP_VERSION = '7.0';
+const APP_VERSION = '6.0';
 
 const i18n = {
     vi: {
@@ -37,6 +38,8 @@ const i18n = {
         childAsk: 'Bạn là cha hay mẹ của người con?',
         asFather: 'Tôi là cha',
         asMother: 'Tôi là mẹ'
+        selectAction: 'Chọn: 1-Sửa, 2-Thêm con, 3-Thêm vợ/chồng, 4-Thêm cha, 5-Thêm mẹ',
+        childParentPrompt: 'Bạn là cha hay mẹ của người con? (f/m)'
     },
     en: {
         title: 'Personal Genealogy',
@@ -72,6 +75,8 @@ const i18n = {
         childAsk: 'Are you the father or mother of the child?',
         asFather: 'I am the father',
         asMother: 'I am the mother'
+        selectAction: 'Choose: 1-Edit, 2-Add child, 3-Add spouse, 4-Add father, 5-Add mother',
+        childParentPrompt: 'Are you the father or mother of the child? (f/m)'
     }
 };
 
@@ -358,6 +363,35 @@ function createNode(member) {
 function openActionModal(member) {
     modalMember = member;
     actionModal.show();
+    div.addEventListener('click', () => handleNodeClick(member));
+    return div;
+}
+
+function handleNodeClick(member) {
+    const action = prompt(i18n[currentLang].selectAction);
+    if (!action) return;
+    switch(action) {
+        case '1':
+            loadMember(member);
+            setCenter(member.id);
+            showSection('addMember');
+            break;
+        case '2': {
+            const role = prompt(i18n[currentLang].childParentPrompt);
+            if (role === 'f') prepareAddRelative(member, 'child-father');
+            else if (role === 'm') prepareAddRelative(member, 'child-mother');
+            break;
+        }
+        case '3':
+            prepareAddRelative(member, 'spouse');
+            break;
+        case '4':
+            prepareAddRelative(member, 'father');
+            break;
+        case '5':
+            prepareAddRelative(member, 'mother');
+            break;
+    }
 }
 
 function prepareAddRelative(member, relation) {
