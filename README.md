@@ -2,6 +2,12 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 7.0
+
+- Tích hợp jQuery và Bootstrap cho giao diện hiện đại
+- Biểu mẫu thêm thành viên thông minh hơn với kiểm tra trùng lặp quan hệ
+- Bấm thành viên trong cây mở hộp thoại lựa chọn thao tác
+
 ## Phiên bản 6.0
 
 - Bấm vào một thành viên trong cây để thêm người mới có quan hệ trực hệ với thiết lập sẵn

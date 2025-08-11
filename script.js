@@ -1,5 +1,6 @@
 "use strict";
 
+const APP_VERSION = '7.0';
 const APP_VERSION = '6.0';
 
 const i18n = {
@@ -28,6 +29,15 @@ const i18n = {
         namePlaceholder: 'Nhập họ tên',
         nameRequired: 'Vui lòng nhập họ tên.',
         invalidRelation: 'Không thể chọn bản thân làm cha, mẹ hoặc vợ/chồng.',
+        chooseAction: 'Chọn thao tác',
+        edit: 'Sửa',
+        addChild: 'Thêm con',
+        addSpouse: 'Thêm vợ/chồng',
+        addFather: 'Thêm cha',
+        addMother: 'Thêm mẹ',
+        childAsk: 'Bạn là cha hay mẹ của người con?',
+        asFather: 'Tôi là cha',
+        asMother: 'Tôi là mẹ'
         selectAction: 'Chọn: 1-Sửa, 2-Thêm con, 3-Thêm vợ/chồng, 4-Thêm cha, 5-Thêm mẹ',
         childParentPrompt: 'Bạn là cha hay mẹ của người con? (f/m)'
     },
@@ -56,6 +66,15 @@ const i18n = {
         namePlaceholder: 'Enter full name',
         nameRequired: 'Please enter a name.',
         invalidRelation: 'A member cannot be their own parent or spouse.',
+        chooseAction: 'Choose action',
+        edit: 'Edit',
+        addChild: 'Add child',
+        addSpouse: 'Add spouse',
+        addFather: 'Add father',
+        addMother: 'Add mother',
+        childAsk: 'Are you the father or mother of the child?',
+        asFather: 'I am the father',
+        asMother: 'I am the mother'
         selectAction: 'Choose: 1-Edit, 2-Add child, 3-Add spouse, 4-Add father, 5-Add mother',
         childParentPrompt: 'Are you the father or mother of the child? (f/m)'
     }
@@ -67,6 +86,9 @@ let centerId;
 let currentLang;
 let pendingRelation;
 let relatedMemberId;
+let modalMember;
+let actionModal;
+let childModal;
 
 async function init() {
     await initDB();
@@ -88,8 +110,41 @@ async function init() {
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     document.getElementById('version').textContent = 'v' + APP_VERSION;
+    actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+    childModal = new bootstrap.Modal(document.getElementById('childModal'));
+    $('#editBtn').on('click', () => {
+        actionModal.hide();
+        loadMember(modalMember);
+        setCenter(modalMember.id);
+        showSection('addMember');
+    });
+    $('#addSpouseBtn').on('click', () => {
+        actionModal.hide();
+        prepareAddRelative(modalMember, 'spouse');
+    });
+    $('#addFatherBtn').on('click', () => {
+        actionModal.hide();
+        prepareAddRelative(modalMember, 'father');
+    });
+    $('#addMotherBtn').on('click', () => {
+        actionModal.hide();
+        prepareAddRelative(modalMember, 'mother');
+    });
+    $('#addChildBtn').on('click', () => {
+        actionModal.hide();
+        childModal.show();
+    });
+    $('#childAsFatherBtn').on('click', () => {
+        childModal.hide();
+        prepareAddRelative(modalMember, 'child-father');
+    });
+    $('#childAsMotherBtn').on('click', () => {
+        childModal.hide();
+        prepareAddRelative(modalMember, 'child-mother');
+    });
     updateLanguage(savedLang);
     setupNav();
+    setupSmartForm();
     clearForm();
 }
 
@@ -294,12 +349,20 @@ async function refreshSelects(excludeId) {
         spouseSel.appendChild(opt3);
     }
     updateLanguage(document.getElementById('languageSelect').value);
+    syncSelectOptions();
 }
 
 function createNode(member) {
     const div = document.createElement('div');
     div.className = 'member-node';
     div.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
+    div.addEventListener('click', () => openActionModal(member));
+    return div;
+}
+
+function openActionModal(member) {
+    modalMember = member;
+    actionModal.show();
     div.addEventListener('click', () => handleNodeClick(member));
     return div;
 }
@@ -348,6 +411,7 @@ function prepareAddRelative(member, relation) {
             document.getElementById('spouseSelect').value = member.id;
         }
     }
+    syncSelectOptions();
     showSection('addMember');
 }
 
@@ -560,4 +624,27 @@ function updateLanguage(lang) {
     });
     localStorage.setItem('lang', lang);
     renderTree();
+}
+
+function setupSmartForm() {
+    $('#fatherSelect, #motherSelect, #spouseSelect').on('change', syncSelectOptions);
+}
+
+function syncSelectOptions() {
+    const father = $('#fatherSelect').val();
+    const mother = $('#motherSelect').val();
+    const spouse = $('#spouseSelect').val();
+    $('#fatherSelect option, #motherSelect option, #spouseSelect option').prop('disabled', false);
+    if (father) {
+        $(`#motherSelect option[value="${father}"]`).prop('disabled', true);
+        $(`#spouseSelect option[value="${father}"]`).prop('disabled', true);
+    }
+    if (mother) {
+        $(`#fatherSelect option[value="${mother}"]`).prop('disabled', true);
+        $(`#spouseSelect option[value="${mother}"]`).prop('disabled', true);
+    }
+    if (spouse) {
+        $(`#fatherSelect option[value="${spouse}"]`).prop('disabled', true);
+        $(`#motherSelect option[value="${spouse}"]`).prop('disabled', true);
+    }
 }
