@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '7.0';
+const APP_VERSION = '8.0';
 
 const i18n = {
     vi: {
@@ -38,7 +38,36 @@ const i18n = {
         asFather: 'Tôi là cha',
         asMother: 'Tôi là mẹ',
         selectAction: 'Chọn: 1-Sửa, 2-Thêm con, 3-Thêm vợ/chồng, 4-Thêm cha, 5-Thêm mẹ',
-        childParentPrompt: 'Bạn là cha hay mẹ của người con? (f/m)'
+        childParentPrompt: 'Bạn là cha hay mẹ của người con? (f/m)',
+        security: 'Bảo mật',
+        exportData: 'Xuất dữ liệu',
+        importData: 'Nhập dữ liệu',
+        exportEncrypted: 'Xuất JSON mã hóa',
+        exportCsv: 'Xuất CSV',
+        backup: 'Sao lưu toàn bộ',
+        restore: 'Khôi phục từ sao lưu',
+        chooseFile: 'Chọn file để nhập',
+        qrCode: 'Mã QR',
+        securityDesc: 'Dữ liệu của bạn được mã hóa AES-GCM 256-bit và lưu trữ an toàn trên trình duyệt.',
+        changePassword: 'Thay đổi mật khẩu',
+        currentPassword: 'Mật khẩu hiện tại',
+        newPassword: 'Mật khẩu mới',
+        confirmPassword: 'Xác nhận mật khẩu mới',
+        changePasswordBtn: 'Đổi mật khẩu',
+        dataInfo: 'Thông tin dữ liệu',
+        clearData: 'Xóa toàn bộ dữ liệu',
+        passwordMismatch: 'Mật khẩu mới và xác nhận không khớp.',
+        passwordIncorrect: 'Mật kh�ấu hiện tại không đúng.',
+        passwordChanged: 'Mật khẩu đã được thay đổi thành công!',
+        exportPassword: 'Nhập mật khẩu để mã hóa file xuất:',
+        importPassword: 'Nhập mật khẩu để giải mã file:',
+        exportSuccess: 'Xuất dữ liệu thành công!',
+        importSuccess: 'Nhập dữ liệu thành công!',
+        backupSuccess: 'Sao lưu thành công!',
+        restoreSuccess: 'Khôi phục thành công!',
+        confirmClearData: 'Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu? Hành động này không thể hoàn tác!',
+        dataCleared: 'Dữ liệu đã được xóa.',
+        errorOccurred: 'Đã xảy ra lỗi: '
     },
     en: {
         title: 'Personal Genealogy',
@@ -75,7 +104,36 @@ const i18n = {
         asFather: 'I am the father',
         asMother: 'I am the mother',
         selectAction: 'Choose: 1-Edit, 2-Add child, 3-Add spouse, 4-Add father, 5-Add mother',
-        childParentPrompt: 'Are you the father or mother of the child? (f/m)'
+        childParentPrompt: 'Are you the father or mother of the child? (f/m)',
+        security: 'Security',
+        exportData: 'Export Data',
+        importData: 'Import Data',
+        exportEncrypted: 'Export Encrypted JSON',
+        exportCsv: 'Export CSV',
+        backup: 'Backup All Data',
+        restore: 'Restore from Backup',
+        chooseFile: 'Choose file to import',
+        qrCode: 'QR Code',
+        securityDesc: 'Your data is encrypted with AES-GCM 256-bit and stored securely in your browser.',
+        changePassword: 'Change Password',
+        currentPassword: 'Current Password',
+        newPassword: 'New Password',
+        confirmPassword: 'Confirm New Password',
+        changePasswordBtn: 'Change Password',
+        dataInfo: 'Data Information',
+        clearData: 'Clear All Data',
+        passwordMismatch: 'New password and confirmation do not match.',
+        passwordIncorrect: 'Current password is incorrect.',
+        passwordChanged: 'Password changed successfully!',
+        exportPassword: 'Enter password to encrypt export file:',
+        importPassword: 'Enter password to decrypt file:',
+        exportSuccess: 'Data exported successfully!',
+        importSuccess: 'Data imported successfully!',
+        backupSuccess: 'Backup created successfully!',
+        restoreSuccess: 'Data restored successfully!',
+        confirmClearData: 'Are you sure you want to delete ALL data? This action cannot be undone!',
+        dataCleared: 'All data has been cleared.',
+        errorOccurred: 'An error occurred: '
     }
 };
 
@@ -99,6 +157,7 @@ async function init() {
     await refreshSelects();
     await renderTree();
     updateStats();
+    updateDataStats();
     document.getElementById('memberForm').addEventListener('submit', saveMember);
     document.getElementById('deleteBtn').addEventListener('click', deleteMember);
     document.getElementById('newBtn').addEventListener('click', clearForm);
@@ -108,6 +167,13 @@ async function init() {
     document.getElementById('searchInput').addEventListener('input', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
+    document.getElementById('exportEncryptedBtn').addEventListener('click', exportEncrypted);
+    document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+    document.getElementById('backupBtn').addEventListener('click', backupData);
+    document.getElementById('restoreBtn').addEventListener('click', () => document.getElementById('restoreInput').click());
+    document.getElementById('restoreInput').addEventListener('change', restoreData);
+    document.getElementById('passwordForm').addEventListener('submit', changePassword);
+    document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
     document.getElementById('version').textContent = 'v' + APP_VERSION;
     actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
     childModal = new bootstrap.Modal(document.getElementById('childModal'));
@@ -555,18 +621,47 @@ async function importData(e) {
     if (!file) return;
     try {
         const text = await file.text();
-        const members = JSON.parse(text);
-        for (const m of members) {
-            const { name, birth, fatherId, motherId, spouseId } = m;
-            const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
-            const tx = db.transaction('members', 'readwrite');
-            tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+        const data = JSON.parse(text);
+
+        // Check if it's an encrypted export
+        if (data.encrypted && data.iv) {
+            const password = prompt(i18n[currentLang].importPassword);
+            if (!password) {
+                e.target.value = '';
+                return;
+            }
+
+            const key = await getKeyFromPassword(password, 'export-salt');
+            const dec = new TextDecoder();
+            const encrypted = b642ab(data.encrypted);
+            const iv = b642ab(data.iv);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+            const members = JSON.parse(dec.decode(decrypted));
+
+            for (const m of members) {
+                const { name, birth, fatherId, motherId, spouseId } = m;
+                const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+                const tx = db.transaction('members', 'readwrite');
+                tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+            }
+        } else {
+            // Regular JSON import
+            const members = Array.isArray(data) ? data : [data];
+            for (const m of members) {
+                const { name, birth, fatherId, motherId, spouseId } = m;
+                const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+                const tx = db.transaction('members', 'readwrite');
+                tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
+            }
         }
+
         await refreshSelects();
         await renderTree();
         updateStats();
+        updateDataStats();
+        alert(i18n[currentLang].importSuccess);
     } catch (err) {
-        alert('Import failed: ' + err.message);
+        alert(i18n[currentLang].errorOccurred + err.message);
         console.error(err);
     } finally {
         e.target.value = '';
@@ -616,5 +711,276 @@ function syncSelectOptions() {
     if (spouse) {
         $(`#fatherSelect option[value="${spouse}"]`).prop('disabled', true);
         $(`#motherSelect option[value="${spouse}"]`).prop('disabled', true);
+    }
+}
+
+// New features for v8.0
+
+async function getKeyFromPassword(password, salt = 'genealogy-salt') {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function changePassword(e) {
+    e.preventDefault();
+    const currentPass = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+
+    if (newPass !== confirmPass) {
+        alert(i18n[currentLang].passwordMismatch);
+        return;
+    }
+
+    const storedPass = localStorage.getItem('genealogyPass');
+    if (currentPass !== storedPass) {
+        alert(i18n[currentLang].passwordIncorrect);
+        return;
+    }
+
+    try {
+        const members = await getAllMembers();
+        const newKey = await getKeyFromPassword(newPass);
+
+        const tx = db.transaction('members', 'readwrite');
+        const store = tx.objectStore('members');
+
+        for (const member of members) {
+            const { id, name, birth, fatherId, motherId, spouseId } = member;
+            const enc = new TextEncoder();
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const data = enc.encode(JSON.stringify({ name, birth, fatherId, motherId, spouseId }));
+            const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, newKey, data);
+
+            store.put({
+                id,
+                name,
+                data: ab2b64(cipher),
+                iv: ab2b64(iv)
+            });
+        }
+
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+
+        localStorage.setItem('genealogyPass', newPass);
+        cryptoKey = newKey;
+
+        alert(i18n[currentLang].passwordChanged);
+        document.getElementById('passwordForm').reset();
+    } catch (err) {
+        console.error('Password change failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    }
+}
+
+async function exportEncrypted() {
+    const password = prompt(i18n[currentLang].exportPassword);
+    if (!password) return;
+
+    try {
+        const members = await getAllMembers();
+        const data = JSON.stringify(members);
+
+        const key = await getKeyFromPassword(password, 'export-salt');
+        const enc = new TextEncoder();
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv },
+            key,
+            enc.encode(data)
+        );
+
+        const exportData = {
+            version: APP_VERSION,
+            encrypted: ab2b64(encrypted),
+            iv: ab2b64(iv)
+        };
+
+        const blob = new Blob([JSON.stringify(exportData)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'genealogy-encrypted.json';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert(i18n[currentLang].exportSuccess);
+    } catch (err) {
+        console.error('Export failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    }
+}
+
+async function exportCsv() {
+    try {
+        const members = await getAllMembers();
+
+        let csv = 'ID,Name,Birth,Father ID,Mother ID,Spouse ID\n';
+
+        for (const m of members) {
+            csv += `${m.id},"${m.name || ''}","${m.birth || ''}",${m.fatherId || ''},${m.motherId || ''},${m.spouseId || ''}\n`;
+        }
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'genealogy.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert(i18n[currentLang].exportSuccess);
+    } catch (err) {
+        console.error('CSV export failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    }
+}
+
+async function backupData() {
+    try {
+        const tx = db.transaction('members', 'readonly');
+        const store = tx.objectStore('members');
+        const allRecords = await new Promise((resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+
+        const backup = {
+            version: APP_VERSION,
+            timestamp: new Date().toISOString(),
+            password: localStorage.getItem('genealogyPass'),
+            records: allRecords
+        };
+
+        const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `genealogy-backup-${new Date().toISOString().split('T')[0]}.backup`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert(i18n[currentLang].backupSuccess);
+    } catch (err) {
+        console.error('Backup failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    }
+}
+
+async function restoreData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm(i18n[currentLang].confirmClearData)) {
+        e.target.value = '';
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const backup = JSON.parse(text);
+
+        const tx = db.transaction('members', 'readwrite');
+        const store = tx.objectStore('members');
+
+        await new Promise((resolve, reject) => {
+            const clearReq = store.clear();
+            clearReq.onsuccess = resolve;
+            clearReq.onerror = () => reject(clearReq.error);
+        });
+
+        for (const record of backup.records) {
+            store.add(record);
+        }
+
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+
+        if (backup.password) {
+            localStorage.setItem('genealogyPass', backup.password);
+            cryptoKey = await getKey(backup.password);
+        }
+
+        await refreshSelects();
+        await renderTree();
+        updateStats();
+        updateDataStats();
+
+        alert(i18n[currentLang].restoreSuccess);
+    } catch (err) {
+        console.error('Restore failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    } finally {
+        e.target.value = '';
+    }
+}
+
+async function clearAllData() {
+    if (!confirm(i18n[currentLang].confirmClearData)) {
+        return;
+    }
+
+    try {
+        const tx = db.transaction('members', 'readwrite');
+        const store = tx.objectStore('members');
+
+        await new Promise((resolve, reject) => {
+            const clearReq = store.clear();
+            clearReq.onsuccess = resolve;
+            clearReq.onerror = () => reject(clearReq.error);
+        });
+
+        localStorage.removeItem('centerId');
+        centerId = null;
+
+        await refreshSelects();
+        await renderTree();
+        updateStats();
+        updateDataStats();
+
+        alert(i18n[currentLang].dataCleared);
+        showSection('homeSection');
+    } catch (err) {
+        console.error('Clear data failed:', err);
+        alert(i18n[currentLang].errorOccurred + err.message);
+    }
+}
+
+async function updateDataStats() {
+    try {
+        const members = await getAllMembers();
+        const statsDiv = document.getElementById('dataStats');
+
+        const tx = db.transaction('members', 'readonly');
+        const store = tx.objectStore('members');
+        const allRecords = await new Promise((resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+
+        const dataSize = JSON.stringify(allRecords).length;
+        const dataSizeKB = (dataSize / 1024).toFixed(2);
+
+        statsDiv.innerHTML = `
+            <p><strong>${currentLang === 'vi' ? 'Tổng số thành viên' : 'Total members'}:</strong> ${members.length}</p>
+            <p><strong>${currentLang === 'vi' ? 'Kích thước dữ liệu' : 'Data size'}:</strong> ${dataSizeKB} KB</p>
+            <p><strong>${currentLang === 'vi' ? 'Trạng thái mã hóa' : 'Encryption status'}:</strong> ${currentLang === 'vi' ? 'Đã mã hóa (AES-GCM 256-bit)' : 'Encrypted (AES-GCM 256-bit)'}</p>
+        `;
+    } catch (err) {
+        console.error('Update stats failed:', err);
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="7.0">
+    <meta name="version" content="8.0">
     <title>Gia phả cá nhân</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
@@ -25,6 +25,7 @@
     <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
     <button data-section="statsSection" data-i18n="stats">Thống kê</button>
     <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
+    <button data-section="securitySection" data-i18n="security">Bảo mật</button>
 </nav>
 <section id="homeSection" class="panel">
     <h2 data-i18n="home">Trang chủ</h2>
@@ -61,10 +62,48 @@
 </section>
 <section id="shareSection" class="panel">
     <h2 data-i18n="share">Chia sẻ</h2>
-    <button id="exportBtn" data-i18n="export">Xuất JSON</button>
-    <input type="file" id="importInput" accept="application/json">
-    <button id="qrBtn" data-i18n="qr">QR Code</button>
-    <div id="qrContainer"></div>
+    <div class="export-group">
+        <h3 data-i18n="exportData">Xuất dữ liệu</h3>
+        <button id="exportBtn" data-i18n="export">Xuất JSON</button>
+        <button id="exportEncryptedBtn" data-i18n="exportEncrypted">Xuất JSON mã hóa</button>
+        <button id="exportCsvBtn" data-i18n="exportCsv">Xuất CSV</button>
+        <button id="backupBtn" data-i18n="backup">Sao lưu toàn bộ</button>
+    </div>
+    <div class="import-group">
+        <h3 data-i18n="importData">Nhập dữ liệu</h3>
+        <label for="importInput" class="file-label" data-i18n="chooseFile">Chọn file để nhập</label>
+        <input type="file" id="importInput" accept="application/json,.csv,.backup">
+        <button id="restoreBtn" data-i18n="restore">Khôi phục từ sao lưu</button>
+        <input type="file" id="restoreInput" accept=".backup" style="display:none;">
+    </div>
+    <div class="qr-group">
+        <h3 data-i18n="qrCode">Mã QR</h3>
+        <button id="qrBtn" data-i18n="qr">Tạo QR Code</button>
+        <div id="qrContainer"></div>
+    </div>
+</section>
+<section id="securitySection" class="panel">
+    <h2 data-i18n="security">Bảo mật</h2>
+    <div class="security-info">
+        <p data-i18n="securityDesc">Dữ liệu của bạn được mã hóa AES-GCM 256-bit và lưu trữ an toàn trên trình duyệt.</p>
+    </div>
+    <div class="password-change">
+        <h3 data-i18n="changePassword">Thay đổi mật khẩu</h3>
+        <form id="passwordForm">
+            <label for="currentPassword" data-i18n="currentPassword">Mật khẩu hiện tại</label>
+            <input type="password" id="currentPassword" required>
+            <label for="newPassword" data-i18n="newPassword">Mật khẩu mới</label>
+            <input type="password" id="newPassword" required>
+            <label for="confirmPassword" data-i18n="confirmPassword">Xác nhận mật khẩu mới</label>
+            <input type="password" id="confirmPassword" required>
+            <button type="submit" data-i18n="changePasswordBtn">Đổi mật khẩu</button>
+        </form>
+    </div>
+    <div class="data-info">
+        <h3 data-i18n="dataInfo">Thông tin dữ liệu</h3>
+        <div id="dataStats"></div>
+        <button id="clearDataBtn" class="btn-danger" data-i18n="clearData">Xóa toàn bộ dữ liệu</button>
+    </div>
 </section>
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
