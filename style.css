@@ -186,12 +186,94 @@ button:disabled {
     height: 200px;
 }
 
+.export-group, .import-group, .qr-group, .password-change, .data-info {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg);
+    border-radius: 6px;
+}
+
+.export-group h3, .import-group h3, .qr-group h3, .password-change h3, .data-info h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.export-group button, .import-group button, .qr-group button {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.file-label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+
+.file-label:hover {
+    background: var(--accent);
+}
+
+#importInput, #restoreInput {
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.security-info {
+    background: #e3f2fd;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--primary);
+}
+
+.security-info p {
+    margin: 0;
+    color: #1565c0;
+}
+
+.btn-danger {
+    background: #dc3545 !important;
+}
+
+.btn-danger:hover {
+    background: #c82333 !important;
+}
+
+#dataStats {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+}
+
+#qrContainer {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
 @media (max-width: 600px) {
     #mainNav {
-        flex-direction: column;
+        flex-wrap: wrap;
+    }
+
+    #mainNav button {
+        flex: 1 1 45%;
     }
 
     section.panel {
         margin: 0.5rem;
+    }
+
+    .export-group button, .import-group button {
+        width: 100%;
+        margin-right: 0;
     }
 }
