@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '8.0';
+const APP_VERSION = '9.0';
 
 const i18n = {
     vi: {
@@ -57,7 +57,7 @@ const i18n = {
         dataInfo: 'Thông tin dữ liệu',
         clearData: 'Xóa toàn bộ dữ liệu',
         passwordMismatch: 'Mật khẩu mới và xác nhận không khớp.',
-        passwordIncorrect: 'Mật kh�ấu hiện tại không đúng.',
+        passwordIncorrect: 'Mật khẩu hiện tại không đúng.',
         passwordChanged: 'Mật khẩu đã được thay đổi thành công!',
         exportPassword: 'Nhập mật khẩu để mã hóa file xuất:',
         importPassword: 'Nhập mật khẩu để giải mã file:',
@@ -67,7 +67,25 @@ const i18n = {
         restoreSuccess: 'Khôi phục thành công!',
         confirmClearData: 'Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu? Hành động này không thể hoàn tác!',
         dataCleared: 'Dữ liệu đã được xóa.',
-        errorOccurred: 'Đã xảy ra lỗi: '
+        errorOccurred: 'Đã xảy ra lỗi: ',
+        timeline: 'Dòng thời gian',
+        sortByBirth: 'Theo ngày sinh',
+        sortByAdded: 'Theo thêm vào',
+        addPhoto: 'Thêm ảnh',
+        notes: 'Ghi chú',
+        notesPlaceholder: 'Thêm ghi chú...',
+        totalMembers: 'Tổng thành viên',
+        totalGenerations: 'Số thế hệ',
+        avgAge: 'Tuổi trung bình',
+        oldestMember: 'Người lớn tuổi nhất',
+        generationChart: 'Phân bố thế hệ',
+        ageChart: 'Phân bố độ tuổi',
+        keyboardShortcuts: 'Phím tắt',
+        newMember: 'Thêm thành viên mới',
+        saveMember: 'Lưu thành viên',
+        searchFocus: 'Tìm kiếm',
+        toggleDarkMode: 'Bật/tắt chế độ tối',
+        showShortcuts: 'Hiển thị phím tắt'
     },
     en: {
         title: 'Personal Genealogy',
@@ -133,7 +151,25 @@ const i18n = {
         restoreSuccess: 'Data restored successfully!',
         confirmClearData: 'Are you sure you want to delete ALL data? This action cannot be undone!',
         dataCleared: 'All data has been cleared.',
-        errorOccurred: 'An error occurred: '
+        errorOccurred: 'An error occurred: ',
+        timeline: 'Timeline',
+        sortByBirth: 'By birth date',
+        sortByAdded: 'By added date',
+        addPhoto: 'Add photo',
+        notes: 'Notes',
+        notesPlaceholder: 'Add notes...',
+        totalMembers: 'Total members',
+        totalGenerations: 'Generations',
+        avgAge: 'Average age',
+        oldestMember: 'Oldest member',
+        generationChart: 'Generation distribution',
+        ageChart: 'Age distribution',
+        keyboardShortcuts: 'Keyboard shortcuts',
+        newMember: 'New member',
+        saveMember: 'Save member',
+        searchFocus: 'Search',
+        toggleDarkMode: 'Toggle dark mode',
+        showShortcuts: 'Show shortcuts'
     }
 };
 
@@ -984,3 +1020,451 @@ async function updateDataStats() {
         console.error('Update stats failed:', err);
     }
 }
+
+// ========== V9.0 NEW FEATURES ==========
+
+// Toast Notification System
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icon = type === 'success' ? 'check-circle-fill' :
+                 type === 'error' ? 'x-circle-fill' :
+                 'exclamation-triangle-fill';
+
+    toast.innerHTML = `
+        <i class="bi bi-${icon}"></i>
+        <div class="toast-message">${message}</div>
+        <button class="toast-close"><i class="bi bi-x"></i></button>
+    `;
+
+    container.appendChild(toast);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+        toast.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    });
+
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Replace all alert() with showToast()
+const originalAlert = window.alert;
+window.alert = function(message) {
+    if (message.includes(i18n[currentLang].errorOccurred) ||
+        message.includes('failed') ||
+        message.includes('incorrect') ||
+        message.includes('không đúng')) {
+        showToast(message, 'error');
+    } else if (message.includes('success') ||
+               message.includes('thành công') ||
+               message.includes('changed')) {
+        showToast(message, 'success');
+    } else {
+        showToast(message, 'warning');
+    }
+};
+
+// Dark Mode
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleDarkMode() {
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    showToast(newTheme === 'dark' ? 'Đã bật chế độ tối' : 'Đã bật chế độ sáng', 'success');
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.querySelector('#themeToggle i');
+    if (icon) {
+        icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    }
+}
+
+// Zoom Controls
+let currentZoom = 1;
+
+function initZoomControls() {
+    document.getElementById('zoomIn').addEventListener('click', () => zoomTree(0.1));
+    document.getElementById('zoomOut').addEventListener('click', () => zoomTree(-0.1));
+    document.getElementById('resetZoom').addEventListener('click', () => resetZoom());
+}
+
+function zoomTree(delta) {
+    currentZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+    applyZoom();
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    applyZoom();
+}
+
+function applyZoom() {
+    const tree = document.getElementById('tree');
+    if (tree) {
+        tree.style.transform = `scale(${currentZoom})`;
+        document.getElementById('zoomLevel').textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+}
+
+// Timeline View
+async function renderTimeline() {
+    const members = await getAllMembers();
+    const container = document.getElementById('timeline');
+
+    if (!members.length) {
+        container.innerHTML = `<p>${i18n[currentLang].noMembers}</p>`;
+        return;
+    }
+
+    const sorted = members.filter(m => m.birth).sort((a, b) => {
+        return new Date(a.birth) - new Date(b.birth);
+    });
+
+    container.innerHTML = '';
+
+    for (const member of sorted) {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+
+        const age = member.birth ? calculateAge(member.birth) : '';
+        const ageText = age ? `(${age} ${currentLang === 'vi' ? 'tuổi' : 'years old'})` : '';
+
+        item.innerHTML = `
+            <div class="timeline-date">${formatDate(member.birth)}</div>
+            <div class="timeline-name">${member.name} ${ageText}</div>
+            <div class="timeline-info">${getRelationshipInfo(member, members)}</div>
+        `;
+
+        item.addEventListener('click', () => {
+            loadMember(member);
+            setCenter(member.id);
+            showSection('addMember');
+        });
+
+        container.appendChild(item);
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+function calculateAge(birthDate) {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+function getRelationshipInfo(member, allMembers) {
+    const parts = [];
+
+    if (member.fatherId) {
+        const father = allMembers.find(m => m.id === member.fatherId);
+        if (father) parts.push(`${currentLang === 'vi' ? 'Cha' : 'Father'}: ${father.name}`);
+    }
+
+    if (member.motherId) {
+        const mother = allMembers.find(m => m.id === member.motherId);
+        if (mother) parts.push(`${currentLang === 'vi' ? 'Mẹ' : 'Mother'}: ${mother.name}`);
+    }
+
+    if (member.spouseId) {
+        const spouse = allMembers.find(m => m.id === member.spouseId);
+        if (spouse) parts.push(`${currentLang === 'vi' ? 'Vợ/Chồng' : 'Spouse'}: ${spouse.name}`);
+    }
+
+    return parts.join(' • ') || (currentLang === 'vi' ? 'Không có thông tin quan hệ' : 'No relationship info');
+}
+
+// Enhanced Statistics with Charts
+let generationChartInstance = null;
+let ageChartInstance = null;
+
+async function updateEnhancedStats() {
+    const members = await getAllMembers();
+
+    // Update stat cards
+    document.getElementById('totalMembers').textContent = members.length;
+
+    const generations = Math.max(...members.map(m => {
+        function depth(id) {
+            const member = members.find(x => x.id === id);
+            if (!member) return 0;
+            if (!member.fatherId && !member.motherId) return 1;
+            return 1 + Math.max(depth(member.fatherId), depth(member.motherId));
+        }
+        return depth(m.id);
+    }), 0);
+    document.getElementById('totalGenerations').textContent = generations;
+
+    // Calculate average age
+    const membersWithBirth = members.filter(m => m.birth);
+    if (membersWithBirth.length > 0) {
+        const ages = membersWithBirth.map(m => calculateAge(m.birth)).filter(a => a !== null);
+        const avgAge = Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length);
+        document.getElementById('avgAge').textContent = avgAge;
+
+        // Find oldest member
+        const oldestAge = Math.max(...ages);
+        const oldest = membersWithBirth.find(m => calculateAge(m.birth) === oldestAge);
+        document.getElementById('oldestMember').textContent = oldest ? `${oldest.name} (${oldestAge})` : '--';
+    } else {
+        document.getElementById('avgAge').textContent = '--';
+        document.getElementById('oldestMember').textContent = '--';
+    }
+
+    // Render charts
+    renderGenerationChart(members);
+    renderAgeChart(members);
+}
+
+function renderGenerationChart(members) {
+    const ctx = document.getElementById('generationChart');
+    if (!ctx) return;
+
+    const generationCounts = {};
+    members.forEach(m => {
+        function depth(id) {
+            const member = members.find(x => x.id === id);
+            if (!member) return 0;
+            if (!member.fatherId && !member.motherId) return 1;
+            return 1 + Math.max(depth(member.fatherId), depth(member.motherId));
+        }
+        const gen = depth(m.id);
+        generationCounts[gen] = (generationCounts[gen] || 0) + 1;
+    });
+
+    if (generationChartInstance) {
+        generationChartInstance.destroy();
+    }
+
+    generationChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(generationCounts).map(g => `${currentLang === 'vi' ? 'Thế hệ' : 'Gen'} ${g}`),
+            datasets: [{
+                label: currentLang === 'vi' ? 'Số người' : 'Count',
+                data: Object.values(generationCounts),
+                backgroundColor: 'rgba(74, 144, 226, 0.6)',
+                borderColor: 'rgba(74, 144, 226, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderAgeChart(members) {
+    const ctx = document.getElementById('ageChart');
+    if (!ctx) return;
+
+    const membersWithBirth = members.filter(m => m.birth);
+    const ageRanges = {
+        '0-20': 0,
+        '21-40': 0,
+        '41-60': 0,
+        '61-80': 0,
+        '80+': 0
+    };
+
+    membersWithBirth.forEach(m => {
+        const age = calculateAge(m.birth);
+        if (age === null) return;
+
+        if (age <= 20) ageRanges['0-20']++;
+        else if (age <= 40) ageRanges['21-40']++;
+        else if (age <= 60) ageRanges['41-60']++;
+        else if (age <= 80) ageRanges['61-80']++;
+        else ageRanges['80+']++;
+    });
+
+    if (ageChartInstance) {
+        ageChartInstance.destroy();
+    }
+
+    ageChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(ageRanges),
+            datasets: [{
+                data: Object.values(ageRanges),
+                backgroundColor: [
+                    'rgba(72, 187, 120, 0.8)',
+                    'rgba(74, 144, 226, 0.8)',
+                    'rgba(237, 137, 54, 0.8)',
+                    'rgba(245, 101, 101, 0.8)',
+                    'rgba(159, 122, 234, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Photo Support
+function initPhotoSupport() {
+    const photoBtn = document.getElementById('photoBtn');
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+
+    photoBtn.addEventListener('click', () => photoInput.click());
+
+    photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            showToast(currentLang === 'vi' ? 'Vui lòng chọn file ảnh' : 'Please select an image file', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            photoPreview.innerHTML = `<img src="${event.target.result}" alt="Photo">`;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Keyboard Shortcuts
+function initKeyboardShortcuts() {
+    const shortcutsModal = new bootstrap.Modal(document.getElementById('shortcutsModal'));
+
+    document.getElementById('keyboardShortcutsBtn').addEventListener('click', () => {
+        shortcutsModal.show();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+N: New member
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            showSection('addMember');
+            clearForm();
+        }
+
+        // Ctrl+S: Save
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            const form = document.getElementById('memberForm');
+            if (form) form.dispatchEvent(new Event('submit'));
+        }
+
+        // Ctrl+F: Search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            showSection('treeSection');
+            document.getElementById('searchInput').focus();
+        }
+
+        // Ctrl+E: Export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            showSection('shareSection');
+        }
+
+        // Ctrl+D: Dark mode
+        if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            toggleDarkMode();
+        }
+
+        // ?: Show shortcuts
+        if (e.key === '?') {
+            shortcutsModal.show();
+        }
+    });
+}
+
+// Loading Overlay
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// Initialize all v9.0 features
+document.addEventListener('DOMContentLoaded', () => {
+    initDarkMode();
+    initZoomControls();
+    initPhotoSupport();
+    initKeyboardShortcuts();
+
+    // Add theme toggle listener
+    document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+
+    // Add timeline sort listeners
+    document.getElementById('sortByBirth').addEventListener('click', () => {
+        document.getElementById('sortByBirth').classList.add('active');
+        document.getElementById('sortByAdded').classList.remove('active');
+        renderTimeline();
+    });
+
+    document.getElementById('sortByAdded').addEventListener('click', () => {
+        document.getElementById('sortByAdded').classList.add('active');
+        document.getElementById('sortByBirth').classList.remove('active');
+        // TODO: Implement sort by added date
+        renderTimeline();
+    });
+
+    // Override updateStats to use enhanced version
+    const originalUpdateStats = window.updateStats;
+    window.updateStats = function() {
+        if (originalUpdateStats) originalUpdateStats();
+        updateEnhancedStats();
+        renderTimeline();
+    };
+});

@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="8.0">
+    <meta name="version" content="9.0">
     <title>Gia phả cá nhân</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,18 +15,48 @@
         <h1 data-i18n="title">Gia phả cá nhân</h1>
         <span id="version" class="version"></span>
     </div>
-    <select id="languageSelect">
-        <option value="vi">Tiếng Việt</option>
-        <option value="en">English</option>
-    </select>
+    <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">
+            <i class="bi bi-moon-fill"></i>
+        </button>
+        <button id="keyboardShortcutsBtn" class="icon-btn" title="Keyboard shortcuts">
+            <i class="bi bi-keyboard"></i>
+        </button>
+        <select id="languageSelect">
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">English</option>
+        </select>
+    </div>
 </header>
 <nav id="mainNav">
-    <button data-section="homeSection" data-i18n="home">Trang chủ</button>
-    <button data-section="addMember" data-i18n="addMember">Thêm thành viên</button>
-    <button data-section="treeSection" data-i18n="tree">Cây gia phả</button>
-    <button data-section="statsSection" data-i18n="stats">Thống kê</button>
-    <button data-section="shareSection" data-i18n="share">Chia sẻ</button>
-    <button data-section="securitySection" data-i18n="security">Bảo mật</button>
+    <button data-section="homeSection" data-i18n="home">
+        <i class="bi bi-house-door"></i>
+        <span class="nav-label">Trang chủ</span>
+    </button>
+    <button data-section="addMember" data-i18n="addMember">
+        <i class="bi bi-person-plus"></i>
+        <span class="nav-label">Thêm thành viên</span>
+    </button>
+    <button data-section="treeSection" data-i18n="tree">
+        <i class="bi bi-diagram-3"></i>
+        <span class="nav-label">Cây gia phả</span>
+    </button>
+    <button data-section="timelineSection" data-i18n="timeline">
+        <i class="bi bi-clock-history"></i>
+        <span class="nav-label">Dòng thời gian</span>
+    </button>
+    <button data-section="statsSection" data-i18n="stats">
+        <i class="bi bi-bar-chart"></i>
+        <span class="nav-label">Thống kê</span>
+    </button>
+    <button data-section="shareSection" data-i18n="share">
+        <i class="bi bi-share"></i>
+        <span class="nav-label">Chia sẻ</span>
+    </button>
+    <button data-section="securitySection" data-i18n="security">
+        <i class="bi bi-shield-lock"></i>
+        <span class="nav-label">Bảo mật</span>
+    </button>
 </nav>
 <section id="homeSection" class="panel">
     <h2 data-i18n="home">Trang chủ</h2>
@@ -33,32 +64,146 @@
 </section>
 <section id="addMember" class="panel">
     <h2 data-i18n="addMember">Thêm thành viên</h2>
-    <form id="memberForm">
+    <form id="memberForm" class="modern-form">
         <input type="hidden" id="memberId">
-        <label for="name" data-i18n="name">Họ tên</label>
-        <input type="text" id="name" required data-i18n-placeholder="namePlaceholder" placeholder="Họ tên">
-        <label for="birth" data-i18n="birth">Ngày sinh</label>
-        <input type="date" id="birth">
-        <label for="fatherSelect" data-i18n="father">Cha</label>
-        <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
-        <label for="motherSelect" data-i18n="mother">Mẹ</label>
-        <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
-        <label for="spouseSelect" data-i18n="spouse">Vợ/Chồng</label>
-        <select id="spouseSelect"><option value="" data-i18n="none">--</option></select>
-        <button type="button" id="newBtn" data-i18n="new">Thêm mới</button>
-        <button type="submit" data-i18n="save">Lưu</button>
-        <button type="button" id="deleteBtn" data-i18n="delete" disabled>Xóa</button>
-        <button type="button" id="centerBtn" data-i18n="setCenter" disabled>Chọn làm trung tâm</button>
+
+        <div class="photo-section">
+            <div class="photo-preview" id="photoPreview">
+                <i class="bi bi-person-circle"></i>
+            </div>
+            <input type="file" id="photoInput" accept="image/*" style="display:none;">
+            <button type="button" id="photoBtn" class="btn-secondary" data-i18n="addPhoto">Thêm ảnh</button>
+        </div>
+
+        <div class="form-group">
+            <label for="name" data-i18n="name">Họ tên</label>
+            <div class="input-with-icon">
+                <i class="bi bi-person"></i>
+                <input type="text" id="name" required data-i18n-placeholder="namePlaceholder" placeholder="Họ tên">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="birth" data-i18n="birth">Ngày sinh</label>
+            <div class="input-with-icon">
+                <i class="bi bi-calendar"></i>
+                <input type="date" id="birth">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="notes" data-i18n="notes">Ghi chú</label>
+            <textarea id="notes" rows="3" data-i18n-placeholder="notesPlaceholder" placeholder="Thêm ghi chú..."></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="fatherSelect" data-i18n="father">Cha</label>
+                <select id="fatherSelect"><option value="" data-i18n="none">--</option></select>
+            </div>
+            <div class="form-group">
+                <label for="motherSelect" data-i18n="mother">Mẹ</label>
+                <select id="motherSelect"><option value="" data-i18n="none">--</option></select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="spouseSelect" data-i18n="spouse">Vợ/Chồng</label>
+            <select id="spouseSelect"><option value="" data-i18n="none">--</option></select>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" id="newBtn" class="btn-secondary" data-i18n="new">
+                <i class="bi bi-plus-circle"></i> Thêm mới
+            </button>
+            <button type="submit" class="btn-primary" data-i18n="save">
+                <i class="bi bi-check-circle"></i> Lưu
+            </button>
+            <button type="button" id="deleteBtn" class="btn-danger" data-i18n="delete" disabled>
+                <i class="bi bi-trash"></i> Xóa
+            </button>
+            <button type="button" id="centerBtn" class="btn-secondary" data-i18n="setCenter" disabled>
+                <i class="bi bi-bullseye"></i> Chọn làm trung tâm
+            </button>
+        </div>
     </form>
 </section>
 <section id="treeSection" class="panel">
-    <h2 data-i18n="tree">Cây gia phả</h2>
-    <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
-    <div id="tree"></div>
+    <div class="section-header">
+        <h2 data-i18n="tree">Cây gia phả</h2>
+        <div class="tree-controls">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
+            </div>
+            <div class="zoom-controls">
+                <button id="zoomOut" class="icon-btn" title="Zoom out">
+                    <i class="bi bi-zoom-out"></i>
+                </button>
+                <span id="zoomLevel">100%</span>
+                <button id="zoomIn" class="icon-btn" title="Zoom in">
+                    <i class="bi bi-zoom-in"></i>
+                </button>
+                <button id="resetZoom" class="icon-btn" title="Reset">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="treeContainer" class="tree-container">
+        <div id="tree" class="tree-content"></div>
+    </div>
+</section>
+<section id="timelineSection" class="panel">
+    <h2 data-i18n="timeline">Dòng thời gian</h2>
+    <div class="timeline-controls">
+        <button id="sortByBirth" class="active" data-i18n="sortByBirth">Theo ngày sinh</button>
+        <button id="sortByAdded" data-i18n="sortByAdded">Theo thêm vào</button>
+    </div>
+    <div id="timeline"></div>
 </section>
 <section id="statsSection" class="panel">
     <h2 data-i18n="stats">Thống kê</h2>
-    <div id="stats"></div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="bi bi-people"></i>
+            <div class="stat-info">
+                <h3 id="totalMembers">0</h3>
+                <p data-i18n="totalMembers">Tổng thành viên</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="bi bi-bar-chart-steps"></i>
+            <div class="stat-info">
+                <h3 id="totalGenerations">0</h3>
+                <p data-i18n="totalGenerations">Số thế hệ</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="bi bi-cake"></i>
+            <div class="stat-info">
+                <h3 id="avgAge">--</h3>
+                <p data-i18n="avgAge">Tuổi trung bình</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <i class="bi bi-graph-up"></i>
+            <div class="stat-info">
+                <h3 id="oldestMember">--</h3>
+                <p data-i18n="oldestMember">Người lớn tuổi nhất</p>
+            </div>
+        </div>
+    </div>
+    <div class="charts-container">
+        <div class="chart-box">
+            <h3 data-i18n="generationChart">Phân bố thế hệ</h3>
+            <canvas id="generationChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h3 data-i18n="ageChart">Phân bố độ tuổi</h3>
+            <canvas id="ageChart"></canvas>
+        </div>
+    </div>
 </section>
 <section id="shareSection" class="panel">
     <h2 data-i18n="share">Chia sẻ</h2>
@@ -162,8 +307,57 @@
   </div>
 </div>
 
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div class="modal fade" id="shortcutsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" data-i18n="keyboardShortcuts">Phím tắt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>N</kbd>
+            <span data-i18n="newMember">Thêm thành viên mới</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>S</kbd>
+            <span data-i18n="saveMember">Lưu thành viên</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>F</kbd>
+            <span data-i18n="searchFocus">Tìm kiếm</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>E</kbd>
+            <span data-i18n="exportData">Xuất dữ liệu</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>D</kbd>
+            <span data-i18n="toggleDarkMode">Bật/tắt chế độ tối</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>?</kbd>
+            <span data-i18n="showShortcuts">Hiển thị phím tắt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="lib/qrcode.min.js"></script>
 <script src="script.js"></script>
 </body>
