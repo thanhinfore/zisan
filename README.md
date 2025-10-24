@@ -2,6 +2,58 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 12.0 - Next Generation 🚀
+
+### 💀 Death Date & Living Status
+- **Death date field**: Thêm ngày mất cho thành viên
+- **Living/Deceased auto-detection**: Tự động phân biệt còn sống/đã mất
+- **Deceased styling**: Nodes của người đã mất có style riêng (xám, opacity thấp hơn)
+- **Date validation**: Ngày mất không thể trước ngày sinh
+- **Lifespan calculation**: Tự động tính tuổi thọ (birth-death)
+- **Current age**: Hiển thị tuổi hiện tại nếu còn sống
+
+### 👔 Occupation & Location
+- **Occupation field**: Nghề nghiệp của thành viên
+- **Birthplace field**: Nơi sinh
+- **Icon display**: Hiển thị với icon đẹp mắt trên tree node
+  - 💼 Briefcase icon cho occupation
+  - 📍 Location icon cho birthplace
+
+### 📅 Enhanced Date Display
+- **Lifespan format**: "1950-2020 (70 tuổi)"
+- **Age format**: "1990 (35 tuổi)"
+- **Death only format**: "† 2020"
+- **Smart calculation**: Tự động tính tuổi/tuổi thọ chính xác
+
+### 🎨 Enhanced Tree Nodes
+- **Multi-line layout**: Name, dates, occupation, location hiển thị rõ ràng
+- **Visual hierarchy**: Font sizes và opacity khác nhau
+- **Better spacing**: Layout thoáng đãng, dễ đọc
+- **Deceased visual**: Người đã mất có background xám/mờ
+
+### 📸 Photo Gallery Foundation
+- **Photo gallery UI**: Giao diện để thêm nhiều ảnh
+- **Gallery preview**: Preview grid cho photos
+- **Infrastructure**: HTML/CSS đã sẵn sàng cho photo feature
+
+### 📊 Data Richness
+- **5 new fields**: death, occupation, location + infrastructure
+- **Backward compatible**: Dữ liệu cũ vẫn hoạt động bình thường
+- **Encrypted storage**: Tất cả fields mới đều được mã hóa
+
+### 🔧 Technical Improvements
+- **Enhanced member schema**:
+  ```javascript
+  {
+    name, birth, death, gender,
+    occupation, location,
+    fatherId, motherId, spouseId
+  }
+  ```
+- **Smart validation**: Death date vs birth date
+- **Comprehensive encryption**: All new fields encrypted
+- **Performance optimized**: Efficient rendering
+
 ## Phiên bản 11.1 - Logic thông minh và "This is me" 🌟
 
 ### 🎯 Giới tính (Gender)
