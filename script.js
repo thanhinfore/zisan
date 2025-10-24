@@ -289,6 +289,9 @@ async function init() {
     setupNav();
     setupSmartForm();
     clearForm();
+
+    // Initialize v10 features AFTER database is ready
+    await initV10Features();
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -1482,8 +1485,9 @@ function hideLoading() {
     document.getElementById('loadingOverlay').classList.remove('active');
 }
 
-// Initialize all v9.0 features
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize all v9.0 & v10.0 features
+async function initV10Features() {
+    // v9 features
     initDarkMode();
     initZoomControls();
     initPhotoSupport();
@@ -1514,15 +1518,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTimeline();
     };
 
-    // Initialize v10 features
+    // v10 features - await for database operations
     initUndoRedo();
     initDragDrop();
-    initBirthdayReminders();
-    initRelationshipCalc();
-    initAdvancedSearch();
+    await initBirthdayReminders();
+    await initRelationshipCalc();
+    await initAdvancedSearch();
     initExcelExport();
     initAutoBackup();
-});
+}
 
 // ========== V10.0 NEW FEATURES ==========
 
