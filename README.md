@@ -2,6 +2,74 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 9.0 - Trải nghiệm người dùng đỉnh cao ⭐
+
+### Giao diện hiện đại và Dark Mode 🌓
+- **Dark Mode**: Chế độ tối bảo vệ mắt với giao diện sang trọng
+- **Toast Notifications**: Thông báo mượt mà thay thế alerts
+- **Bootstrap Icons**: Hàng trăm icons đẹp mắt
+- **Smooth Animations**: Hiệu ứng chuyển động mượt mà
+- **Responsive hoàn hảo**: Tối ưu cho cả PC, tablet và mobile
+
+### Cây gia phả tương tác 🌳
+- **Zoom In/Out**: Phóng to/thu nhỏ cây gia phả
+- **Search box**: Tìm kiếm nhanh với icon đẹp
+- **Click & Drag**: Di chuyển cây dễ dàng
+- **Visual enhancements**: Hover effects, smooth transitions
+
+### Dòng thời gian 📅
+- **Timeline View**: Xem lịch sử gia đình theo thời gian
+- **Birth date sorting**: Sắp xếp theo ngày sinh
+- **Age calculation**: Tự động tính tuổi
+- **Relationship info**: Hiển thị mối quan hệ
+
+### Thống kê nâng cao 📊
+- **Stat Cards**: 4 thẻ thống kê với icons đẹp
+  - Tổng thành viên
+  - Số thế hệ
+  - Tuổi trung bình
+  - Người lớn tuổi nhất
+- **Charts**: Biểu đồ trực quan với Chart.js
+  - Phân bố thế hệ (Bar chart)
+  - Phân bố độ tuổi (Doughnut chart)
+
+### Profile Photos 📸
+- **Upload photos**: Thêm ảnh đại diện cho thành viên
+- **Preview**: Xem trước ảnh ngay lập tức
+- **Base64 storage**: Lưu trữ an toàn trong database
+
+### Keyboard Shortcuts ⌨️
+- **Ctrl+N**: Thêm thành viên mới
+- **Ctrl+S**: Lưu thành viên
+- **Ctrl+F**: Tìm kiếm
+- **Ctrl+E**: Mở trang chia sẻ
+- **Ctrl+D**: Bật/tắt dark mode
+- **?**: Hiển thị bảng phím tắt
+
+### Form nâng cao 📝
+- **Icons in inputs**: Icon đẹp mắt cho mỗi field
+- **Notes field**: Thêm ghi chú cho thành viên
+- **Photo section**: Upload và preview ảnh
+- **Button icons**: Buttons có icons rõ ràng
+- **Two-column layout**: Bố cục 2 cột cho form
+
+### Mobile-first Design 📱
+- **Touch-friendly**: Buttons và controls lớn hơn
+- **Swipe navigation**: Vuốt ngang để chuyển tab
+- **Responsive nav**: Navigation thu gọn trên mobile
+- **Adaptive layout**: Tự động điều chỉnh layout
+
+### Print Support 🖨️
+- **Print-friendly**: In được cây gia phả đẹp
+- **Hide UI elements**: Ẩn controls khi in
+- **Page breaks**: Ngắt trang hợp lý
+
+### Performance ⚡
+- **Smooth transitions**: CSS transitions mượt mà
+- **Lazy loading**: Tải dữ liệu khi cần
+- **Chart.js optimization**: Charts render nhanh
+- **No lag**: Mượt mà ngay cả với nhiều thành viên
+
 ## Phiên bản 8.0 - Nâng cấp Bảo mật và Chia sẻ
 
 ### Tính năng Bảo mật Nâng cao
