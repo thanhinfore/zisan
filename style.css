@@ -488,6 +488,66 @@ button:disabled {
     box-shadow: 0 4px 12px var(--shadow-lg);
 }
 
+/* Me node styling */
+.member-node.me {
+    border: 3px solid var(--warning);
+    background: linear-gradient(135deg, #fff9e6, #fffbf0);
+    box-shadow: 0 4px 16px rgba(237, 137, 54, 0.3);
+    position: relative;
+}
+
+[data-theme="dark"] .member-node.me {
+    background: linear-gradient(135deg, #3d2f1f, #4a3622);
+}
+
+.member-node.me.center {
+    background: linear-gradient(135deg, var(--warning), var(--accent));
+    border-color: var(--warning);
+}
+
+/* Node content with gender icon */
+.node-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.gender-icon {
+    font-size: 1rem;
+    opacity: 0.7;
+}
+
+.bi-gender-male {
+    color: #4299e1;
+}
+
+.bi-gender-female {
+    color: #ed64a6;
+}
+
+.bi-gender-ambiguous {
+    color: var(--accent);
+}
+
+/* Me badge */
+.me-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--warning);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.me-badge i {
+    font-size: 0.65rem;
+}
+
 .connector {
     width: 2px;
     height: 30px;

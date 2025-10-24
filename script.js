@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '11.0';
+const APP_VERSION = '11.1';
 
 const i18n = {
     vi: {
@@ -10,6 +10,10 @@ const i18n = {
         addMember: 'Thêm thành viên',
         name: 'Họ tên',
         birth: 'Ngày sinh',
+        gender: 'Giới tính',
+        male: 'Nam',
+        female: 'Nữ',
+        other: 'Khác',
         father: 'Cha',
         mother: 'Mẹ',
         spouse: 'Vợ/Chồng',
@@ -31,6 +35,7 @@ const i18n = {
         chooseAction: 'Chọn thao tác',
         edit: 'Sửa',
         addChild: 'Thêm con',
+        addSibling: 'Thêm anh/chị/em',
         addSpouse: 'Thêm vợ/chồng',
         addFather: 'Thêm cha',
         addMother: 'Thêm mẹ',
@@ -115,7 +120,18 @@ const i18n = {
         confirmDelete: 'Bạn có chắc chắn muốn xóa thành viên này?',
         duplicateName: 'Tên này đã tồn tại. Bạn có muốn tiếp tục không?',
         nameMinLength: 'Tên phải có ít nhất 2 ký tự.',
-        invalidBirthDate: 'Ngày sinh không hợp lệ.'
+        invalidBirthDate: 'Ngày sinh không hợp lệ.',
+        thisIsMe: 'Đây là tôi',
+        markAsMe: 'Đánh dấu là tôi',
+        unmarkAsMe: 'Bỏ đánh dấu',
+        me: 'Tôi',
+        addingSonOf: 'Đang thêm con trai của {name}',
+        addingDaughterOf: 'Đang thêm con gái của {name}',
+        addingChildOf: 'Đang thêm con của {name}',
+        addingSiblingOf: 'Đang thêm anh/chị/em của {name}',
+        addingSpouseOf: 'Đang thêm vợ/chồng của {name}',
+        addingFatherOf: 'Đang thêm cha của {name}',
+        addingMotherOf: 'Đang thêm mẹ của {name}'
     },
     en: {
         title: 'Personal Genealogy',
@@ -124,6 +140,10 @@ const i18n = {
         addMember: 'Add Member',
         name: 'Name',
         birth: 'Birth Date',
+        gender: 'Gender',
+        male: 'Male',
+        female: 'Female',
+        other: 'Other',
         father: 'Father',
         mother: 'Mother',
         spouse: 'Spouse',
@@ -145,6 +165,7 @@ const i18n = {
         chooseAction: 'Choose action',
         edit: 'Edit',
         addChild: 'Add child',
+        addSibling: 'Add sibling',
         addSpouse: 'Add spouse',
         addFather: 'Add father',
         addMother: 'Add mother',
@@ -229,13 +250,25 @@ const i18n = {
         confirmDelete: 'Are you sure you want to delete this member?',
         duplicateName: 'This name already exists. Do you want to continue?',
         nameMinLength: 'Name must be at least 2 characters.',
-        invalidBirthDate: 'Invalid birth date.'
+        invalidBirthDate: 'Invalid birth date.',
+        thisIsMe: 'This is me',
+        markAsMe: 'Mark as me',
+        unmarkAsMe: 'Unmark',
+        me: 'Me',
+        addingSonOf: 'Adding son of {name}',
+        addingDaughterOf: 'Adding daughter of {name}',
+        addingChildOf: 'Adding child of {name}',
+        addingSiblingOf: 'Adding sibling of {name}',
+        addingSpouseOf: 'Adding spouse of {name}',
+        addingFatherOf: 'Adding father of {name}',
+        addingMotherOf: 'Adding mother of {name}'
     }
 };
 
 let db;
 let cryptoKey;
 let centerId;
+let meId; // ID of the person marked as "me"
 let currentLang;
 let pendingRelation;
 let relatedMemberId;
@@ -250,6 +283,7 @@ async function init() {
     document.getElementById('languageSelect').value = savedLang;
     currentLang = savedLang;
     centerId = Number(localStorage.getItem('centerId')) || null;
+    meId = Number(localStorage.getItem('meId')) || null;
     await refreshSelects();
     await renderTree();
     updateStats();
@@ -279,6 +313,18 @@ async function init() {
         setCenter(modalMember.id);
         showSection('addMember');
     });
+    $('#markAsMeBtn').on('click', () => {
+        markAsMe(modalMember);
+        actionModal.hide();
+    });
+    $('#addChildBtn').on('click', () => {
+        actionModal.hide();
+        prepareAddRelative(modalMember, 'child');
+    });
+    $('#addSiblingBtn').on('click', () => {
+        actionModal.hide();
+        prepareAddRelative(modalMember, 'sibling');
+    });
     $('#addSpouseBtn').on('click', () => {
         actionModal.hide();
         prepareAddRelative(modalMember, 'spouse');
@@ -290,18 +336,6 @@ async function init() {
     $('#addMotherBtn').on('click', () => {
         actionModal.hide();
         prepareAddRelative(modalMember, 'mother');
-    });
-    $('#addChildBtn').on('click', () => {
-        actionModal.hide();
-        childModal.show();
-    });
-    $('#childAsFatherBtn').on('click', () => {
-        childModal.hide();
-        prepareAddRelative(modalMember, 'child-father');
-    });
-    $('#childAsMotherBtn').on('click', () => {
-        childModal.hide();
-        prepareAddRelative(modalMember, 'child-mother');
     });
     updateLanguage(savedLang);
     setupNav();
@@ -404,6 +438,7 @@ async function saveMember(e) {
     }
 
     const birth = document.getElementById('birth').value;
+    const gender = document.getElementById('gender').value;
 
     // Validate birth date
     if (birth) {
@@ -435,7 +470,7 @@ async function saveMember(e) {
         return;
     }
 
-    const member = { name, birth, fatherId, motherId, spouseId };
+    const member = { name, birth, gender, fatherId, motherId, spouseId };
 
     // Show loading overlay
     showLoading();
@@ -604,33 +639,138 @@ async function refreshSelects(excludeId) {
 function createNode(member) {
     const div = document.createElement('div');
     div.className = 'member-node';
-    div.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
+
+    // Add "me" class if this is the marked person
+    if (meId && member.id === meId) {
+        div.classList.add('me');
+    }
+
+    // Create content with gender icon and "me" badge
+    const content = document.createElement('div');
+    content.className = 'node-content';
+
+    // Gender icon
+    if (member.gender) {
+        const genderIcon = document.createElement('i');
+        genderIcon.className = 'bi ' + (
+            member.gender === 'male' ? 'bi-gender-male' :
+            member.gender === 'female' ? 'bi-gender-female' :
+            'bi-gender-ambiguous'
+        );
+        genderIcon.classList.add('gender-icon');
+        content.appendChild(genderIcon);
+    }
+
+    // Name and birth
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
+    content.appendChild(nameSpan);
+
+    // "Me" badge
+    if (meId && member.id === meId) {
+        const meBadge = document.createElement('span');
+        meBadge.className = 'me-badge';
+        meBadge.innerHTML = '<i class="bi bi-star-fill"></i> ' + i18n[currentLang].me;
+        content.appendChild(meBadge);
+    }
+
+    div.appendChild(content);
     div.addEventListener('click', () => openActionModal(member));
     return div;
 }
 
 function openActionModal(member) {
     modalMember = member;
+
+    // Update "Mark as me" button text
+    const markAsMeBtn = document.getElementById('markAsMeBtn');
+    if (meId === member.id) {
+        markAsMeBtn.setAttribute('data-i18n', 'unmarkAsMe');
+        markAsMeBtn.innerHTML = '<i class="bi bi-star"></i> ' + i18n[currentLang].unmarkAsMe;
+    } else {
+        markAsMeBtn.setAttribute('data-i18n', 'markAsMe');
+        markAsMeBtn.innerHTML = '<i class="bi bi-star"></i> ' + i18n[currentLang].markAsMe;
+    }
+
     actionModal.show();
 }
 
-function prepareAddRelative(member, relation) {
-    clearForm();
-    if (relation === 'child-father') {
-        document.getElementById('fatherSelect').value = member.id;
-        pendingRelation = null;
-        relatedMemberId = null;
-    } else if (relation === 'child-mother') {
-        document.getElementById('motherSelect').value = member.id;
-        pendingRelation = null;
-        relatedMemberId = null;
+function markAsMe(member) {
+    if (meId === member.id) {
+        // Unmark
+        meId = null;
+        localStorage.removeItem('meId');
+        showToast(i18n[currentLang].unmarkAsMe, 'success');
     } else {
-        pendingRelation = relation;
-        relatedMemberId = member.id;
-        if (relation === 'spouse') {
-            document.getElementById('spouseSelect').value = member.id;
-        }
+        // Mark as me
+        meId = member.id;
+        localStorage.setItem('meId', meId.toString());
+        // Auto set as center
+        setCenter(meId);
+        showToast(i18n[currentLang].markAsMe + ': ' + member.name, 'success');
     }
+    renderTree();
+}
+
+async function prepareAddRelative(member, relation) {
+    clearForm();
+    pendingRelation = relation;
+    relatedMemberId = member.id;
+
+    // Smart relationship setup based on gender and relation type
+    if (relation === 'child') {
+        // Adding child - auto-detect parent based on gender
+        if (member.gender === 'male') {
+            document.getElementById('fatherSelect').value = member.id;
+            // If has spouse, auto-set mother
+            if (member.spouseId) {
+                document.getElementById('motherSelect').value = member.spouseId;
+            }
+        } else if (member.gender === 'female') {
+            document.getElementById('motherSelect').value = member.id;
+            // If has spouse, auto-set father
+            if (member.spouseId) {
+                document.getElementById('fatherSelect').value = member.spouseId;
+            }
+        } else {
+            // No gender info - just set basic info, let user choose
+            // Will be handled in handlePendingRelation
+        }
+
+        // Show context message
+        const contextMsg = member.gender === 'male' ?
+            i18n[currentLang].addingSonOf.replace('{name}', member.name) :
+            member.gender === 'female' ?
+            i18n[currentLang].addingDaughterOf.replace('{name}', member.name) :
+            i18n[currentLang].addingChildOf.replace('{name}', member.name);
+
+        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
+
+    } else if (relation === 'sibling') {
+        // Adding sibling - auto-copy parents
+        document.getElementById('fatherSelect').value = member.fatherId || '';
+        document.getElementById('motherSelect').value = member.motherId || '';
+
+        const contextMsg = i18n[currentLang].addingSiblingOf.replace('{name}', member.name);
+        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
+
+    } else if (relation === 'spouse') {
+        document.getElementById('spouseSelect').value = member.id;
+
+        const contextMsg = i18n[currentLang].addingSpouseOf.replace('{name}', member.name);
+        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
+
+    } else if (relation === 'father') {
+        // Will be handled in handlePendingRelation to update member
+        const contextMsg = i18n[currentLang].addingFatherOf.replace('{name}', member.name);
+        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
+
+    } else if (relation === 'mother') {
+        // Will be handled in handlePendingRelation to update member
+        const contextMsg = i18n[currentLang].addingMotherOf.replace('{name}', member.name);
+        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
+    }
+
     syncSelectOptions();
     showSection('addMember');
 }
@@ -643,26 +783,75 @@ async function handlePendingRelation(newId) {
         relatedMemberId = null;
         return;
     }
+
+    const allMembers = await getAllMembers();
+
     switch (pendingRelation) {
         case 'spouse':
+            // Update both members with spouse relationship
             member.spouseId = newId;
+            const newSpouse = await getMember(newId);
+            if (newSpouse) {
+                newSpouse.spouseId = member.id;
+                const spouseEnc = await encryptData({
+                    name: newSpouse.name,
+                    birth: newSpouse.birth,
+                    gender: newSpouse.gender,
+                    fatherId: newSpouse.fatherId,
+                    motherId: newSpouse.motherId,
+                    spouseId: newSpouse.spouseId
+                });
+                const tx2 = db.transaction('members', 'readwrite');
+                tx2.objectStore('members').put({ id: newSpouse.id, name: newSpouse.name, data: spouseEnc.data, iv: spouseEnc.iv });
+            }
             break;
+
         case 'father':
-            member.fatherId = newId;
-            break;
         case 'mother':
-            member.motherId = newId;
+            // Update member and all siblings
+            const fieldName = pendingRelation === 'father' ? 'fatherId' : 'motherId';
+            member[fieldName] = newId;
+
+            // Find and update all siblings
+            const siblings = allMembers.filter(m =>
+                m.id !== member.id &&
+                ((m.fatherId && m.fatherId === member.fatherId) ||
+                 (m.motherId && m.motherId === member.motherId))
+            );
+
+            for (const sibling of siblings) {
+                sibling[fieldName] = newId;
+                const sibEnc = await encryptData({
+                    name: sibling.name,
+                    birth: sibling.birth,
+                    gender: sibling.gender,
+                    fatherId: sibling.fatherId,
+                    motherId: sibling.motherId,
+                    spouseId: sibling.spouseId
+                });
+                const tx3 = db.transaction('members', 'readwrite');
+                tx3.objectStore('members').put({ id: sibling.id, name: sibling.name, data: sibEnc.data, iv: sibEnc.iv });
+            }
+            break;
+
+        case 'child':
+        case 'sibling':
+            // These are already handled by form selections
             break;
     }
+
+    // Update the main member
     const enc = await encryptData({
         name: member.name,
         birth: member.birth,
+        gender: member.gender,
         fatherId: member.fatherId,
         motherId: member.motherId,
         spouseId: member.spouseId
     });
     const tx = db.transaction('members', 'readwrite');
     tx.objectStore('members').put({ id: member.id, name: member.name, data: enc.data, iv: enc.iv });
+
     pendingRelation = null;
     relatedMemberId = null;
 }
@@ -752,6 +941,7 @@ async function loadMember(member) {
     document.getElementById('memberId').value = member.id;
     document.getElementById('name').value = member.name;
     document.getElementById('birth').value = member.birth || '';
+    document.getElementById('gender').value = member.gender || '';
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
     document.getElementById('spouseSelect').value = member.spouseId || '';
