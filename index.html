@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="9.0">
+    <meta name="version" content="10.0">
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="description" content="Ứng dụng quản lý gia phả cá nhân với bảo mật cao, hoạt động offline">
+    <link rel="manifest" href="manifest.json">
     <title>Gia phả cá nhân</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -57,7 +60,21 @@
         <i class="bi bi-shield-lock"></i>
         <span class="nav-label">Bảo mật</span>
     </button>
+    <button data-section="toolsSection" data-i18n="tools">
+        <i class="bi bi-tools"></i>
+        <span class="nav-label">Công cụ</span>
+    </button>
 </nav>
+<!-- Undo/Redo Bar -->
+<div id="undoRedoBar" class="undo-redo-bar">
+    <button id="undoBtn" class="icon-btn" disabled title="Undo (Ctrl+Z)">
+        <i class="bi bi-arrow-counterclockwise"></i>
+    </button>
+    <button id="redoBtn" class="icon-btn" disabled title="Redo (Ctrl+Y)">
+        <i class="bi bi-arrow-clockwise"></i>
+    </button>
+    <span id="actionHistory" class="action-text"></span>
+</div>
 <section id="homeSection" class="panel">
     <h2 data-i18n="home">Trang chủ</h2>
     <p data-i18n="welcome">Chào mừng! Bắt đầu bằng cách thêm thành viên đầu tiên.</p>
@@ -248,6 +265,87 @@
         <h3 data-i18n="dataInfo">Thông tin dữ liệu</h3>
         <div id="dataStats"></div>
         <button id="clearDataBtn" class="btn-danger" data-i18n="clearData">Xóa toàn bộ dữ liệu</button>
+    </div>
+</section>
+<section id="toolsSection" class="panel">
+    <h2 data-i18n="tools">Công cụ</h2>
+
+    <!-- Drag & Drop Upload -->
+    <div class="tool-group">
+        <h3 data-i18n="dragDropUpload">Kéo thả để tải lên</h3>
+        <div id="dropZone" class="drop-zone">
+            <i class="bi bi-cloud-upload"></i>
+            <p data-i18n="dropZoneText">Kéo file JSON/CSV/Backup vào đây hoặc click để chọn</p>
+            <input type="file" id="dropZoneInput" accept=".json,.csv,.backup" style="display:none;">
+        </div>
+    </div>
+
+    <!-- Birthday Reminders -->
+    <div class="tool-group">
+        <h3 data-i18n="birthdayReminders">Nhắc sinh nhật</h3>
+        <div id="upcomingBirthdays" class="birthday-list"></div>
+    </div>
+
+    <!-- Relationship Calculator -->
+    <div class="tool-group">
+        <h3 data-i18n="relationshipCalc">Tính mối quan hệ</h3>
+        <div class="relationship-calc">
+            <div class="form-row">
+                <select id="person1Select" class="form-control">
+                    <option value="" data-i18n="selectPerson1">Chọn người thứ 1</option>
+                </select>
+                <select id="person2Select" class="form-control">
+                    <option value="" data-i18n="selectPerson2">Chọn người thứ 2</option>
+                </select>
+            </div>
+            <button id="calculateRelBtn" class="btn-primary" data-i18n="calculate">
+                <i class="bi bi-calculator"></i> Tính toán
+            </button>
+            <div id="relationshipResult" class="relationship-result"></div>
+        </div>
+    </div>
+
+    <!-- Advanced Search -->
+    <div class="tool-group">
+        <h3 data-i18n="advancedSearch">Tìm kiếm nâng cao</h3>
+        <div class="advanced-search">
+            <input type="text" id="advSearchName" placeholder="Tên..." data-i18n-placeholder="searchName">
+            <div class="form-row">
+                <input type="date" id="advSearchBirthFrom" placeholder="Từ ngày">
+                <input type="date" id="advSearchBirthTo" placeholder="Đến ngày">
+            </div>
+            <select id="advSearchGeneration">
+                <option value="">Tất cả thế hệ</option>
+            </select>
+            <button id="advSearchBtn" class="btn-primary" data-i18n="search">
+                <i class="bi bi-search"></i> Tìm kiếm
+            </button>
+            <div id="advSearchResults" class="search-results"></div>
+        </div>
+    </div>
+
+    <!-- Excel Export -->
+    <div class="tool-group">
+        <h3 data-i18n="excelExport">Xuất Excel</h3>
+        <p data-i18n="excelDesc">Xuất dữ liệu sang file Excel (.xlsx) để dễ dàng chỉnh sửa</p>
+        <button id="exportExcelBtn" class="btn-primary" data-i18n="exportExcel">
+            <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+        </button>
+    </div>
+
+    <!-- Auto Backup Settings -->
+    <div class="tool-group">
+        <h3 data-i18n="autoBackup">Sao lưu tự động</h3>
+        <div class="auto-backup-settings">
+            <label>
+                <input type="checkbox" id="enableAutoBackup">
+                <span data-i18n="enableAutoBackup">Bật sao lưu tự động hàng ngày</span>
+            </label>
+            <p id="lastBackupTime" class="text-secondary"></p>
+            <button id="backupNowBtn" class="btn-secondary" data-i18n="backupNow">
+                <i class="bi bi-save"></i> Sao lưu ngay
+            </button>
+        </div>
     </div>
 </section>
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">

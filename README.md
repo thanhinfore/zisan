@@ -2,6 +2,60 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 10.0 - Công cụ chuyên nghiệp 🚀
+
+### ↩️ Undo/Redo
+- **Hoàn tác/Làm lại**: Lịch sử thay đổi lên đến 50 actions
+- **Floating bar**: Thanh nổi ở góc màn hình, luôn sẵn sàng
+- **Keyboard shortcuts**: Ctrl+Z (Undo), Ctrl+Y (Redo)
+- **Action history**: Hiển thị hành động vừa thực hiện
+
+### 🎯 Drag & Drop Upload
+- **Kéo thả file**: Chỉ cần kéo file vào vùng drop zone
+- **Multi-format**: Hỗ trợ JSON, CSV, Backup
+- **Visual feedback**: Hiệu ứng đẹp mắt khi drag over
+- **Auto-detect format**: Tự động nhận diện và xử lý
+
+### 🎂 Birthday Reminders
+- **Upcoming birthdays**: Top 5 sinh nhật sắp tới
+- **Today highlight**: Đánh dấu sinh nhật hôm nay đặc biệt
+- **Days countdown**: Đếm ngược số ngày còn lại
+- **Age calculation**: Tự động tính tuổi sẽ đến
+- **Click to view**: Click để xem chi tiết member
+
+### 🔗 Relationship Calculator
+- **Tính mối quan hệ**: Tìm mối quan hệ giữa 2 người bất kỳ
+- **Parent/Child detection**: Nhận diện cha/mẹ - con
+- **Sibling detection**: Nhận diện anh chị em
+- **Spouse detection**: Nhận diện vợ/chồng
+- **Beautiful result**: Hiển thị kết quả gradient đẹp mắt
+
+### 🔍 Advanced Search
+- **Name search**: Tìm theo tên
+- **Date range**: Lọc theo khoảng ngày sinh
+- **Generation filter**: Lọc theo thế hệ
+- **Grid results**: Kết quả hiển thị dạng grid
+- **Click to edit**: Click để xem/sửa ngay
+
+### 📊 Excel Export
+- **CSV export**: Xuất dữ liệu sang Excel-compatible CSV
+- **UTF-8 BOM**: Hỗ trợ tiếng Việt hoàn hảo
+- **Date filename**: Tên file tự động có ngày tháng
+- **Easy editing**: Mở trong Excel/Google Sheets
+
+### 💾 Auto Backup
+- **Daily backup**: Tự động sao lưu hàng ngày
+- **Enable/Disable**: Bật/tắt dễ dàng
+- **Last backup time**: Hiển thị lần backup cuối
+- **Manual backup**: Nút "Sao lưu ngay" cho backup thủ công
+- **Background operation**: Chạy nền không làm gián đoạn
+
+### 📱 Progressive Web App (PWA)
+- **Install to home**: Cài đặt như app native
+- **Offline support**: Hoạt động hoàn toàn offline
+- **App icon**: Icon đẹp trên màn hình chính
+- **Standalone mode**: Chạy như ứng dụng độc lập
+
 ## Phiên bản 9.0 - Trải nghiệm người dùng đỉnh cao ⭐
 
 ### Giao diện hiện đại và Dark Mode 🌓
