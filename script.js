@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '10.0';
+const APP_VERSION = '11.0';
 
 const i18n = {
     vi: {
@@ -106,7 +106,16 @@ const i18n = {
         today: 'Hôm nay',
         daysLeft: 'còn {days} ngày',
         lastBackup: 'Sao lưu lần cuối: {time}',
-        neverBackedUp: 'Chưa sao lưu lần nào'
+        neverBackedUp: 'Chưa sao lưu lần nào',
+        memberAdded: 'Đã thêm thành viên thành công!',
+        memberUpdated: 'Đã cập nhật thành viên thành công!',
+        saveFailed: 'Lưu thất bại. Vui lòng thử lại.',
+        memberDeleted: 'Đã xóa thành viên thành công!',
+        deleteFailed: 'Xóa thất bại. Vui lòng thử lại.',
+        confirmDelete: 'Bạn có chắc chắn muốn xóa thành viên này?',
+        duplicateName: 'Tên này đã tồn tại. Bạn có muốn tiếp tục không?',
+        nameMinLength: 'Tên phải có ít nhất 2 ký tự.',
+        invalidBirthDate: 'Ngày sinh không hợp lệ.'
     },
     en: {
         title: 'Personal Genealogy',
@@ -211,7 +220,16 @@ const i18n = {
         today: 'Today',
         daysLeft: '{days} days left',
         lastBackup: 'Last backup: {time}',
-        neverBackedUp: 'Never backed up'
+        neverBackedUp: 'Never backed up',
+        memberAdded: 'Member added successfully!',
+        memberUpdated: 'Member updated successfully!',
+        saveFailed: 'Save failed. Please try again.',
+        memberDeleted: 'Member deleted successfully!',
+        deleteFailed: 'Delete failed. Please try again.',
+        confirmDelete: 'Are you sure you want to delete this member?',
+        duplicateName: 'This name already exists. Do you want to continue?',
+        nameMinLength: 'Name must be at least 2 characters.',
+        invalidBirthDate: 'Invalid birth date.'
     }
 };
 
@@ -374,55 +392,140 @@ async function decryptData(record) {
 async function saveMember(e) {
     e.preventDefault();
     const name = document.getElementById('name').value.trim();
+
+    // Validate name
     if (!name) {
-        alert(i18n[currentLang].nameRequired);
+        showToast(i18n[currentLang].nameRequired, 'error');
         return;
     }
+    if (name.length < 2) {
+        showToast(i18n[currentLang].nameMinLength, 'error');
+        return;
+    }
+
     const birth = document.getElementById('birth').value;
+
+    // Validate birth date
+    if (birth) {
+        const birthDate = new Date(birth);
+        const today = new Date();
+        if (birthDate > today) {
+            showToast(i18n[currentLang].invalidBirthDate, 'error');
+            return;
+        }
+    }
+
     const fatherId = parseInt(document.getElementById('fatherSelect').value) || null;
     const motherId = parseInt(document.getElementById('motherSelect').value) || null;
     const spouseId = parseInt(document.getElementById('spouseSelect').value) || null;
     const id = document.getElementById('memberId').value;
     const numId = id ? Number(id) : null;
+
     if (numId && (fatherId === numId || motherId === numId || spouseId === numId)) {
-        alert(i18n[currentLang].invalidRelation);
+        showToast(i18n[currentLang].invalidRelation, 'error');
         return;
     }
+
+    // Check for duplicate names (v11 feature)
+    const allMembers = await getAllMembers();
+    const duplicateExists = allMembers.some(m =>
+        m.name.toLowerCase() === name.toLowerCase() && m.id !== numId
+    );
+    if (duplicateExists && !confirm(i18n[currentLang].duplicateName)) {
+        return;
+    }
+
     const member = { name, birth, fatherId, motherId, spouseId };
-    const encrypted = await encryptData(member);
-    const tx = db.transaction('members', 'readwrite');
-    const store = tx.objectStore('members');
-    const request = id ?
-        store.put({ id: numId, name, data: encrypted.data, iv: encrypted.iv }) :
-        store.add({ name, data: encrypted.data, iv: encrypted.iv });
-    request.onsuccess = async () => {
-        const newId = numId ? numId : request.result;
-        await handlePendingRelation(newId);
-        await refreshSelects();
-        setCenter(newId);
-        await renderTree();
-        updateStats();
-        clearForm();
-        showSection('treeSection');
-    };
+
+    // Show loading overlay
+    showLoading();
+
+    try {
+        const encrypted = await encryptData(member);
+
+        // Use Promise to properly wait for transaction completion
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('members', 'readwrite');
+            const store = tx.objectStore('members');
+            const request = id ?
+                store.put({ id: numId, name, data: encrypted.data, iv: encrypted.iv }) :
+                store.add({ name, data: encrypted.data, iv: encrypted.iv });
+
+            let newId;
+            request.onsuccess = () => {
+                newId = numId ? numId : request.result;
+            };
+
+            // Wait for transaction to complete before updating UI
+            tx.oncomplete = async () => {
+                try {
+                    await handlePendingRelation(newId);
+                    await refreshSelects();
+                    setCenter(newId);
+                    await renderTree();
+                    updateStats();
+                    clearForm();
+                    showSection('treeSection');
+                    showToast(id ? i18n[currentLang].memberUpdated : i18n[currentLang].memberAdded, 'success');
+                    resolve(newId);
+                } finally {
+                    hideLoading();
+                }
+            };
+
+            tx.onerror = () => {
+                hideLoading();
+                showToast(i18n[currentLang].saveFailed, 'error');
+                reject(tx.error);
+            };
+        });
+    } catch (error) {
+        hideLoading();
+        showToast(i18n[currentLang].saveFailed, 'error');
+        throw error;
+    }
 }
 
 async function deleteMember() {
     const id = document.getElementById('memberId').value;
     if (!id) return;
-    const tx = db.transaction('members', 'readwrite');
-    tx.objectStore('members').delete(Number(id));
-    tx.oncomplete = async () => {
-        if (Number(id) === centerId) {
-            localStorage.removeItem('centerId');
-            centerId = null;
-        }
-        await refreshSelects();
-        await renderTree();
-        updateStats();
-        clearForm();
-        showSection('treeSection');
-    };
+
+    // Confirm before delete
+    if (!confirm(i18n[currentLang].confirmDelete)) {
+        return;
+    }
+
+    // Show loading overlay
+    showLoading();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('members', 'readwrite');
+        tx.objectStore('members').delete(Number(id));
+
+        tx.oncomplete = async () => {
+            try {
+                if (Number(id) === centerId) {
+                    localStorage.removeItem('centerId');
+                    centerId = null;
+                }
+                await refreshSelects();
+                await renderTree();
+                updateStats();
+                clearForm();
+                showSection('treeSection');
+                showToast(i18n[currentLang].memberDeleted, 'success');
+                resolve();
+            } finally {
+                hideLoading();
+            }
+        };
+
+        tx.onerror = () => {
+            hideLoading();
+            showToast(i18n[currentLang].deleteFailed, 'error');
+            reject(tx.error);
+        };
+    });
 }
 
 async function getAllMembers() {

@@ -2,6 +2,35 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 11.0 - Ổn định và Trải nghiệm hoàn hảo ✨
+
+### 🔧 Sửa lỗi quan trọng
+- **Transaction completion fix**: Đợi transaction hoàn tất trước khi cập nhật UI
+- **Tree update fix**: Cây gia phả giờ đây cập nhật ngay lập tức sau khi thêm/sửa/xóa thành viên
+- **Promise-based operations**: Tất cả database operations sử dụng Promise đúng cách
+
+### ⚡ Loading Experience
+- **Loading overlay**: Hiển thị loading khi lưu/xóa thành viên
+- **Better feedback**: Người dùng luôn biết hệ thống đang xử lý
+- **Smooth transitions**: Chuyển đổi mượt mà giữa các trạng thái
+
+### ✅ Form Validation nâng cao
+- **Name length validation**: Tên phải có ít nhất 2 ký tự
+- **Birth date validation**: Không cho phép ngày sinh trong tương lai
+- **Duplicate name check**: Cảnh báo khi tên đã tồn tại (v11 feature)
+- **Real-time feedback**: Toast notifications thay vì alerts
+
+### 🎨 UX Improvements
+- **Confirmation dialogs**: Xác nhận trước khi xóa thành viên
+- **Success/Error messages**: Thông báo rõ ràng cho mọi thao tác
+- **Toast instead of alert**: Sử dụng toast cho tất cả thông báo
+- **Better error handling**: Xử lý lỗi toàn diện với try-catch
+
+### 🚀 Performance
+- **Optimized database queries**: Giảm số lần truy vấn database
+- **Efficient rendering**: Chỉ render lại khi cần thiết
+- **Memory management**: Quản lý memory tốt hơn với finally blocks
+
 ## Phiên bản 10.0 - Công cụ chuyên nghiệp 🚀
 
 ### ↩️ Undo/Redo
