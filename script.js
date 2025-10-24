@@ -1152,8 +1152,9 @@ async function importData(e) {
             const members = JSON.parse(dec.decode(decrypted));
 
             for (const m of members) {
-                const { name, birth, fatherId, motherId, spouseId } = m;
-                const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+                // v12: Include all fields including death, gender, occupation, location
+                const { name, birth, death, gender, occupation, location, fatherId, motherId, spouseId } = m;
+                const encrypted = await encryptData({ name, birth, death, gender, occupation, location, fatherId, motherId, spouseId });
                 const tx = db.transaction('members', 'readwrite');
                 tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
             }
@@ -1161,8 +1162,9 @@ async function importData(e) {
             // Regular JSON import
             const members = Array.isArray(data) ? data : [data];
             for (const m of members) {
-                const { name, birth, fatherId, motherId, spouseId } = m;
-                const encrypted = await encryptData({ name, birth, fatherId, motherId, spouseId });
+                // v12: Include all fields including death, gender, occupation, location
+                const { name, birth, death, gender, occupation, location, fatherId, motherId, spouseId } = m;
+                const encrypted = await encryptData({ name, birth, death, gender, occupation, location, fatherId, motherId, spouseId });
                 const tx = db.transaction('members', 'readwrite');
                 tx.objectStore('members').add({ name, data: encrypted.data, iv: encrypted.iv });
             }
@@ -1338,24 +1340,25 @@ async function exportCsv() {
     try {
         const members = await getAllMembers();
 
-        let csv = 'ID,Name,Birth,Father ID,Mother ID,Spouse ID\n';
+        // CSV header with v12 fields
+        let csv = '\uFEFFID,Name,Birth,Death,Gender,Occupation,Location,Father ID,Mother ID,Spouse ID\n';
 
         for (const m of members) {
-            csv += `${m.id},"${m.name || ''}","${m.birth || ''}",${m.fatherId || ''},${m.motherId || ''},${m.spouseId || ''}\n`;
+            csv += `${m.id},"${m.name || ''}","${m.birth || ''}","${m.death || ''}","${m.gender || ''}","${m.occupation || ''}","${m.location || ''}",${m.fatherId || ''},${m.motherId || ''},${m.spouseId || ''}\n`;
         }
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.download = `genealogy_${new Date().toISOString().split('T')[0]}.csv`;
         a.href = url;
-        a.download = 'genealogy.csv';
         a.click();
         URL.revokeObjectURL(url);
 
-        alert(i18n[currentLang].exportSuccess);
+        showToast(i18n[currentLang].exportSuccess, 'success');
     } catch (err) {
         console.error('CSV export failed:', err);
-        alert(i18n[currentLang].errorOccurred + err.message);
+        showToast(i18n[currentLang].errorOccurred + err.message, 'error');
     }
 }
 
@@ -1619,13 +1622,51 @@ async function renderTimeline() {
         const item = document.createElement('div');
         item.className = 'timeline-item';
 
-        const age = member.birth ? calculateAge(member.birth) : '';
-        const ageText = age ? `(${age} ${currentLang === 'vi' ? 'tuổi' : 'years old'})` : '';
+        // Add deceased class if applicable
+        if (member.death) {
+            item.classList.add('deceased');
+        }
+
+        // Calculate age or lifespan
+        let ageText = '';
+        if (member.birth && member.death) {
+            const lifespan = calculateLifespan(member.birth, member.death);
+            ageText = `(${i18n[currentLang].lifespan}: ${lifespan} ${i18n[currentLang].years})`;
+        } else if (member.birth) {
+            const age = calculateAge(member.birth);
+            ageText = age ? `(${i18n[currentLang].age}: ${age} ${i18n[currentLang].years})` : '';
+        }
+
+        // Build info parts
+        const infoParts = [];
+
+        // Dates
+        if (member.death) {
+            infoParts.push(`${formatDate(member.birth)} - ${formatDate(member.death)}`);
+        } else {
+            infoParts.push(formatDate(member.birth));
+        }
+
+        // Occupation
+        if (member.occupation) {
+            infoParts.push(`💼 ${member.occupation}`);
+        }
+
+        // Location
+        if (member.location) {
+            infoParts.push(`📍 ${member.location}`);
+        }
+
+        // Relationships
+        const relInfo = getRelationshipInfo(member, members);
+        if (relInfo && relInfo !== (currentLang === 'vi' ? 'Không có thông tin quan hệ' : 'No relationship info')) {
+            infoParts.push(relInfo);
+        }
 
         item.innerHTML = `
             <div class="timeline-date">${formatDate(member.birth)}</div>
             <div class="timeline-name">${member.name} ${ageText}</div>
-            <div class="timeline-info">${getRelationshipInfo(member, members)}</div>
+            <div class="timeline-info">${infoParts.join(' • ')}</div>
         `;
 
         item.addEventListener('click', () => {
@@ -1658,6 +1699,18 @@ function calculateAge(birthDate) {
         age--;
     }
     return age;
+}
+
+function calculateLifespan(birthDate, deathDate) {
+    if (!birthDate || !deathDate) return null;
+    const birth = new Date(birthDate);
+    const death = new Date(deathDate);
+    let years = death.getFullYear() - birth.getFullYear();
+    const monthDiff = death.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && death.getDate() < birth.getDate())) {
+        years--;
+    }
+    return years;
 }
 
 function getRelationshipInfo(member, allMembers) {
@@ -1702,20 +1755,57 @@ async function updateEnhancedStats() {
     }), 0);
     document.getElementById('totalGenerations').textContent = generations;
 
-    // Calculate average age
-    const membersWithBirth = members.filter(m => m.birth);
-    if (membersWithBirth.length > 0) {
-        const ages = membersWithBirth.map(m => calculateAge(m.birth)).filter(a => a !== null);
-        const avgAge = Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length);
-        document.getElementById('avgAge').textContent = avgAge;
+    // Calculate average age for LIVING members only
+    const livingMembers = members.filter(m => m.birth && !m.death);
+    const deceasedMembers = members.filter(m => m.birth && m.death);
 
-        // Find oldest member
-        const oldestAge = Math.max(...ages);
-        const oldest = membersWithBirth.find(m => calculateAge(m.birth) === oldestAge);
-        document.getElementById('oldestMember').textContent = oldest ? `${oldest.name} (${oldestAge})` : '--';
+    if (livingMembers.length > 0) {
+        const ages = livingMembers.map(m => calculateAge(m.birth)).filter(a => a !== null && a >= 0);
+        if (ages.length > 0) {
+            const avgAge = Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length);
+            document.getElementById('avgAge').textContent = avgAge;
+
+            // Find oldest LIVING member
+            const oldestAge = Math.max(...ages);
+            const oldest = livingMembers.find(m => calculateAge(m.birth) === oldestAge);
+            document.getElementById('oldestMember').textContent = oldest ? `${oldest.name} (${oldestAge})` : '--';
+        } else {
+            document.getElementById('avgAge').textContent = '--';
+            document.getElementById('oldestMember').textContent = '--';
+        }
     } else {
         document.getElementById('avgAge').textContent = '--';
         document.getElementById('oldestMember').textContent = '--';
+    }
+
+    // Calculate average lifespan for deceased members (v12)
+    if (deceasedMembers.length > 0) {
+        const lifespans = deceasedMembers
+            .map(m => calculateLifespan(m.birth, m.death))
+            .filter(l => l !== null && l >= 0);
+
+        if (lifespans.length > 0) {
+            const avgLifespan = Math.round(lifespans.reduce((sum, l) => sum + l, 0) / lifespans.length);
+            const maxLifespan = Math.max(...lifespans);
+            const longestLived = deceasedMembers.find(m => calculateLifespan(m.birth, m.death) === maxLifespan);
+
+            // Try to find or create lifespan stat card
+            if (document.getElementById('avgAge') && document.getElementById('avgAge').parentElement) {
+                const avgAgeCard = document.getElementById('avgAge').parentElement;
+                const avgAgeLabel = avgAgeCard.querySelector('.stat-label');
+                if (avgAgeLabel) {
+                    avgAgeLabel.textContent = `${i18n[currentLang].avgAge} (${i18n[currentLang].living})`;
+                }
+            }
+
+            if (document.getElementById('oldestMember') && document.getElementById('oldestMember').parentElement) {
+                const oldestCard = document.getElementById('oldestMember').parentElement;
+                const oldestLabel = oldestCard.querySelector('.stat-label');
+                if (oldestLabel) {
+                    oldestLabel.textContent = i18n[currentLang].oldestMember;
+                }
+            }
+        }
     }
 
     // Render charts
@@ -1779,7 +1869,8 @@ function renderAgeChart(members) {
     const ctx = document.getElementById('ageChart');
     if (!ctx) return;
 
-    const membersWithBirth = members.filter(m => m.birth);
+    // v12: Only show LIVING members (those without death date)
+    const livingMembers = members.filter(m => m.birth && !m.death);
     const ageRanges = {
         '0-20': 0,
         '21-40': 0,
@@ -1788,7 +1879,7 @@ function renderAgeChart(members) {
         '80+': 0
     };
 
-    membersWithBirth.forEach(m => {
+    livingMembers.forEach(m => {
         const age = calculateAge(m.birth);
         if (age === null) return;
 
