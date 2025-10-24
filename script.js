@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '11.1';
+const APP_VERSION = '12.0';
 
 const i18n = {
     vi: {
@@ -10,7 +10,12 @@ const i18n = {
         addMember: 'Thêm thành viên',
         name: 'Họ tên',
         birth: 'Ngày sinh',
+        death: 'Ngày mất',
+        living: 'Còn sống',
+        deceased: 'Đã mất',
         gender: 'Giới tính',
+        occupation: 'Nghề nghiệp',
+        location: 'Nơi sinh',
         male: 'Nam',
         female: 'Nữ',
         other: 'Khác',
@@ -131,7 +136,35 @@ const i18n = {
         addingSiblingOf: 'Đang thêm anh/chị/em của {name}',
         addingSpouseOf: 'Đang thêm vợ/chồng của {name}',
         addingFatherOf: 'Đang thêm cha của {name}',
-        addingMotherOf: 'Đang thêm mẹ của {name}'
+        addingMotherOf: 'Đang thêm mẹ của {name}',
+        photos: 'Ảnh',
+        addPhotos: 'Thêm ảnh',
+        photoGallery: 'Thư viện ảnh',
+        deletePhoto: 'Xóa ảnh',
+        setAsProfilePhoto: 'Đặt làm ảnh đại diện',
+        collapse: 'Thu gọn',
+        expand: 'Mở rộng',
+        collapseAll: 'Thu gọn tất cả',
+        expandAll: 'Mở rộng tất cả',
+        exportPdf: 'Xuất PDF',
+        pdfExporting: 'Đang tạo PDF...',
+        pdfSuccess: 'Đã tạo PDF thành công!',
+        minimap: 'Bản đồ nhỏ',
+        showMinimap: 'Hiện bản đồ',
+        hideMinimap: 'Ẩn bản đồ',
+        livingMembers: 'Còn sống',
+        deceasedMembers: 'Đã mất',
+        unknownStatus: 'Không rõ',
+        longevity: 'Tuổi thọ',
+        averageLifespan: 'Tuổi thọ trung bình',
+        oldestDeceased: 'Người sống lâu nhất',
+        years: 'tuổi',
+        occupationPlaceholder: 'Nhập nghề nghiệp',
+        locationPlaceholder: 'Nhập nơi sinh',
+        viewPhotos: 'Xem ảnh ({count})',
+        noPhotos: 'Chưa có ảnh',
+        age: 'Tuổi',
+        lifespan: 'Thọ'
     },
     en: {
         title: 'Personal Genealogy',
@@ -140,7 +173,12 @@ const i18n = {
         addMember: 'Add Member',
         name: 'Name',
         birth: 'Birth Date',
+        death: 'Death Date',
+        living: 'Living',
+        deceased: 'Deceased',
         gender: 'Gender',
+        occupation: 'Occupation',
+        location: 'Birthplace',
         male: 'Male',
         female: 'Female',
         other: 'Other',
@@ -261,7 +299,35 @@ const i18n = {
         addingSiblingOf: 'Adding sibling of {name}',
         addingSpouseOf: 'Adding spouse of {name}',
         addingFatherOf: 'Adding father of {name}',
-        addingMotherOf: 'Adding mother of {name}'
+        addingMotherOf: 'Adding mother of {name}',
+        photos: 'Photos',
+        addPhotos: 'Add photos',
+        photoGallery: 'Photo Gallery',
+        deletePhoto: 'Delete photo',
+        setAsProfilePhoto: 'Set as profile photo',
+        collapse: 'Collapse',
+        expand: 'Expand',
+        collapseAll: 'Collapse All',
+        expandAll: 'Expand All',
+        exportPdf: 'Export PDF',
+        pdfExporting: 'Creating PDF...',
+        pdfSuccess: 'PDF created successfully!',
+        minimap: 'Minimap',
+        showMinimap: 'Show minimap',
+        hideMinimap: 'Hide minimap',
+        livingMembers: 'Living',
+        deceasedMembers: 'Deceased',
+        unknownStatus: 'Unknown',
+        longevity: 'Longevity',
+        averageLifespan: 'Average lifespan',
+        oldestDeceased: 'Longest lived',
+        years: 'years',
+        occupationPlaceholder: 'Enter occupation',
+        locationPlaceholder: 'Enter birthplace',
+        viewPhotos: 'View photos ({count})',
+        noPhotos: 'No photos',
+        age: 'Age',
+        lifespan: 'Lifespan'
     }
 };
 
@@ -438,7 +504,10 @@ async function saveMember(e) {
     }
 
     const birth = document.getElementById('birth').value;
+    const death = document.getElementById('death').value;
     const gender = document.getElementById('gender').value;
+    const occupation = document.getElementById('occupation').value.trim();
+    const location = document.getElementById('location').value.trim();
 
     // Validate birth date
     if (birth) {
@@ -446,6 +515,14 @@ async function saveMember(e) {
         const today = new Date();
         if (birthDate > today) {
             showToast(i18n[currentLang].invalidBirthDate, 'error');
+            return;
+        }
+    }
+
+    // Validate death date
+    if (death) {
+        if (birth && death < birth) {
+            showToast(currentLang === 'vi' ? 'Ngày mất không thể trước ngày sinh' : 'Death date cannot be before birth date', 'error');
             return;
         }
     }
@@ -470,7 +547,7 @@ async function saveMember(e) {
         return;
     }
 
-    const member = { name, birth, gender, fatherId, motherId, spouseId };
+    const member = { name, birth, death, gender, occupation, location, fatherId, motherId, spouseId };
 
     // Show loading overlay
     showLoading();
@@ -645,6 +722,11 @@ function createNode(member) {
         div.classList.add('me');
     }
 
+    // Add deceased class if person has death date
+    if (member.death) {
+        div.classList.add('deceased');
+    }
+
     // Create content with gender icon and "me" badge
     const content = document.createElement('div');
     content.className = 'node-content';
@@ -661,10 +743,51 @@ function createNode(member) {
         content.appendChild(genderIcon);
     }
 
-    // Name and birth
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = member.name + (member.birth ? ` (${member.birth})` : '');
+    // Name
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'node-name';
+    nameSpan.textContent = member.name;
     content.appendChild(nameSpan);
+
+    // Dates and age/lifespan (v12)
+    if (member.birth || member.death) {
+        const datesSpan = document.createElement('div');
+        datesSpan.className = 'node-dates';
+
+        if (member.birth && member.death) {
+            // Calculate lifespan
+            const birthDate = new Date(member.birth);
+            const deathDate = new Date(member.death);
+            const years = deathDate.getFullYear() - birthDate.getFullYear();
+            datesSpan.textContent = `${member.birth} - ${member.death} (${years} ${i18n[currentLang].years})`;
+        } else if (member.birth) {
+            // Calculate current age
+            const birthDate = new Date(member.birth);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            datesSpan.textContent = `${member.birth} (${age} ${i18n[currentLang].years})`;
+        } else if (member.death) {
+            datesSpan.textContent = `† ${member.death}`;
+        }
+
+        content.appendChild(datesSpan);
+    }
+
+    // Occupation (v12)
+    if (member.occupation) {
+        const occSpan = document.createElement('div');
+        occSpan.className = 'node-occupation';
+        occSpan.innerHTML = `<i class="bi bi-briefcase"></i> ${member.occupation}`;
+        content.appendChild(occSpan);
+    }
+
+    // Location (v12)
+    if (member.location) {
+        const locSpan = document.createElement('div');
+        locSpan.className = 'node-location';
+        locSpan.innerHTML = `<i class="bi bi-geo-alt"></i> ${member.location}`;
+        content.appendChild(locSpan);
+    }
 
     // "Me" badge
     if (meId && member.id === meId) {
@@ -796,7 +919,10 @@ async function handlePendingRelation(newId) {
                 const spouseEnc = await encryptData({
                     name: newSpouse.name,
                     birth: newSpouse.birth,
+                    death: newSpouse.death,
                     gender: newSpouse.gender,
+                    occupation: newSpouse.occupation,
+                    location: newSpouse.location,
                     fatherId: newSpouse.fatherId,
                     motherId: newSpouse.motherId,
                     spouseId: newSpouse.spouseId
@@ -824,7 +950,10 @@ async function handlePendingRelation(newId) {
                 const sibEnc = await encryptData({
                     name: sibling.name,
                     birth: sibling.birth,
+                    death: sibling.death,
                     gender: sibling.gender,
+                    occupation: sibling.occupation,
+                    location: sibling.location,
                     fatherId: sibling.fatherId,
                     motherId: sibling.motherId,
                     spouseId: sibling.spouseId
@@ -844,7 +973,10 @@ async function handlePendingRelation(newId) {
     const enc = await encryptData({
         name: member.name,
         birth: member.birth,
+        death: member.death,
         gender: member.gender,
+        occupation: member.occupation,
+        location: member.location,
         fatherId: member.fatherId,
         motherId: member.motherId,
         spouseId: member.spouseId
@@ -941,7 +1073,10 @@ async function loadMember(member) {
     document.getElementById('memberId').value = member.id;
     document.getElementById('name').value = member.name;
     document.getElementById('birth').value = member.birth || '';
+    document.getElementById('death').value = member.death || '';
     document.getElementById('gender').value = member.gender || '';
+    document.getElementById('occupation').value = member.occupation || '';
+    document.getElementById('location').value = member.location || '';
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
     document.getElementById('spouseSelect').value = member.spouseId || '';

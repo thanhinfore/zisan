@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="11.1">
+    <meta name="version" content="12.0">
     <meta name="theme-color" content="#4a90e2">
     <meta name="description" content="Ứng dụng quản lý gia phả cá nhân với bảo mật cao, hoạt động offline">
     <link rel="manifest" href="manifest.json">
@@ -109,6 +109,16 @@
                 </div>
             </div>
             <div class="form-group">
+                <label for="death" data-i18n="death">Ngày mất</label>
+                <div class="input-with-icon">
+                    <i class="bi bi-calendar-x"></i>
+                    <input type="date" id="death">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
                 <label for="gender" data-i18n="gender">Giới tính</label>
                 <select id="gender">
                     <option value="" data-i18n="none">--</option>
@@ -117,11 +127,38 @@
                     <option value="other" data-i18n="other">Khác</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="occupation" data-i18n="occupation">Nghề nghiệp</label>
+                <div class="input-with-icon">
+                    <i class="bi bi-briefcase"></i>
+                    <input type="text" id="occupation" data-i18n-placeholder="occupationPlaceholder" placeholder="Nhập nghề nghiệp">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="location" data-i18n="location">Nơi sinh</label>
+            <div class="input-with-icon">
+                <i class="bi bi-geo-alt"></i>
+                <input type="text" id="location" data-i18n-placeholder="locationPlaceholder" placeholder="Nhập nơi sinh">
+            </div>
         </div>
 
         <div class="form-group">
             <label for="notes" data-i18n="notes">Ghi chú</label>
             <textarea id="notes" rows="3" data-i18n-placeholder="notesPlaceholder" placeholder="Thêm ghi chú..."></textarea>
+        </div>
+
+        <!-- Photo Gallery (v12) -->
+        <div class="form-group">
+            <label data-i18n="photos">Ảnh</label>
+            <div class="photo-gallery-manager">
+                <div id="photoGalleryPreview" class="photo-gallery-preview"></div>
+                <input type="file" id="photoGalleryInput" accept="image/*" multiple style="display:none;">
+                <button type="button" id="addPhotosBtn" class="btn-secondary">
+                    <i class="bi bi-images"></i> <span data-i18n="addPhotos">Thêm ảnh</span>
+                </button>
+            </div>
         </div>
 
         <div class="form-row">
