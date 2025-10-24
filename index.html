@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="11.0">
+    <meta name="version" content="11.1">
     <meta name="theme-color" content="#4a90e2">
     <meta name="description" content="Ứng dụng quản lý gia phả cá nhân với bảo mật cao, hoạt động offline">
     <link rel="manifest" href="manifest.json">
@@ -100,11 +100,22 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="birth" data-i18n="birth">Ngày sinh</label>
-            <div class="input-with-icon">
-                <i class="bi bi-calendar"></i>
-                <input type="date" id="birth">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="birth" data-i18n="birth">Ngày sinh</label>
+                <div class="input-with-icon">
+                    <i class="bi bi-calendar"></i>
+                    <input type="date" id="birth">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="gender" data-i18n="gender">Giới tính</label>
+                <select id="gender">
+                    <option value="" data-i18n="none">--</option>
+                    <option value="male" data-i18n="male">Nam</option>
+                    <option value="female" data-i18n="female">Nữ</option>
+                    <option value="other" data-i18n="other">Khác</option>
+                </select>
             </div>
         </div>
 
@@ -356,27 +367,28 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <button type="button" class="btn btn-primary w-100 mb-2" id="editBtn" data-i18n="edit">Sửa</button>
-        <button
-            type="button"
-            class="btn btn-secondary w-100 mb-2"
-            id="addChildBtn"
-            data-i18n="addChild">Thêm con</button>
-        <button
-            type="button"
-            class="btn btn-secondary w-100 mb-2"
-            id="addSpouseBtn"
-            data-i18n="addSpouse">Thêm vợ/chồng</button>
-        <button
-            type="button"
-            class="btn btn-secondary w-100 mb-2"
-            id="addFatherBtn"
-            data-i18n="addFather">Thêm cha</button>
-        <button
-            type="button"
-            class="btn btn-secondary w-100"
-            id="addMotherBtn"
-            data-i18n="addMother">Thêm mẹ</button>
+        <button type="button" class="btn btn-primary w-100 mb-2" id="editBtn" data-i18n="edit">
+            <i class="bi bi-pencil"></i> Sửa
+        </button>
+        <button type="button" class="btn btn-info w-100 mb-2" id="markAsMeBtn" data-i18n="markAsMe">
+            <i class="bi bi-star"></i> Đánh dấu là tôi
+        </button>
+        <hr>
+        <button type="button" class="btn btn-secondary w-100 mb-2" id="addChildBtn" data-i18n="addChild">
+            <i class="bi bi-arrow-down"></i> Thêm con
+        </button>
+        <button type="button" class="btn btn-secondary w-100 mb-2" id="addSiblingBtn" data-i18n="addSibling">
+            <i class="bi bi-people"></i> Thêm anh/chị/em
+        </button>
+        <button type="button" class="btn btn-secondary w-100 mb-2" id="addSpouseBtn" data-i18n="addSpouse">
+            <i class="bi bi-heart"></i> Thêm vợ/chồng
+        </button>
+        <button type="button" class="btn btn-secondary w-100 mb-2" id="addFatherBtn" data-i18n="addFather">
+            <i class="bi bi-arrow-up"></i> Thêm cha
+        </button>
+        <button type="button" class="btn btn-secondary w-100" id="addMotherBtn" data-i18n="addMother">
+            <i class="bi bi-arrow-up"></i> Thêm mẹ
+        </button>
       </div>
     </div>
   </div>

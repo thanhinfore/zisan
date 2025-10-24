@@ -2,6 +2,45 @@
 
 Ứng dụng web gia phả cá nhân hoạt động hoàn toàn trên trình duyệt. Dữ liệu được lưu trong IndexedDB của máy người dùng và không cần máy chủ.
 
+## Phiên bản 11.1 - Logic thông minh và "This is me" 🌟
+
+### 🎯 Giới tính (Gender)
+- **Gender field**: Thêm trường giới tính (Nam/Nữ/Khác) cho mỗi thành viên
+- **Gender icons**: Hiển thị icon giới tính đẹp mắt trên cây gia phả
+- **Smart parent detection**: Tự động xác định cha/mẹ dựa trên giới tính
+
+### ⭐ "This is me" Feature
+- **Mark as me**: Đánh dấu bản thân trong cây gia phả
+- **Special highlighting**: Node "Tôi" được highlight với border vàng đặc biệt
+- **Me badge**: Badge "Tôi" hiển thị rõ ràng
+- **Auto center**: Tự động đặt làm trung tâm khi mark
+- **Persistent**: Lưu trong localStorage, giữ nguyên sau khi reload
+
+### 🧠 Logic thêm thành viên thông minh
+- **Add child - Smart detection**:
+  - Nếu cha có giới tính Nam + có vợ → Tự động set cả cha và mẹ
+  - Nếu mẹ có giới tính Nữ + có chồng → Tự động set cả mẹ và cha
+  - Không cần hỏi "bạn là cha hay mẹ" nữa!
+- **Add sibling**:
+  - Tự động copy cha và mẹ từ anh/chị/em
+  - Không cần nhập lại thông tin cha mẹ
+- **Add spouse**:
+  - Tự động link bidirectional (cả 2 người đều có spouse)
+- **Add father/mother**:
+  - Tự động update cả siblings (anh chị em cùng cha mẹ)
+- **Context messages**: Hiển thị message rõ ràng "Đang thêm con của {name}"
+
+### 🎨 UI/UX Improvements
+- **Gender-specific colors**: Nam (xanh), Nữ (hồng), Khác (cam)
+- **Better action modal**: Thêm icons cho các action
+- **Add sibling button**: Button mới để thêm anh/chị/em
+- **Dynamic button text**: "Mark as me" ↔ "Unmark" tự động đổi
+
+### 🔧 Technical
+- **Bidirectional spouse linking**: Khi thêm vợ/chồng, cả 2 đều được link
+- **Sibling cascade update**: Update cha/mẹ cho tất cả anh chị em khi add parent
+- **Gender-aware logic**: Sử dụng gender để improve UX
+
 ## Phiên bản 11.0 - Ổn định và Trải nghiệm hoàn hảo ✨
 
 ### 🔧 Sửa lỗi quan trọng
