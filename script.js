@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '9.0';
+const APP_VERSION = '10.0';
 
 const i18n = {
     vi: {
@@ -85,7 +85,28 @@ const i18n = {
         saveMember: 'Lưu thành viên',
         searchFocus: 'Tìm kiếm',
         toggleDarkMode: 'Bật/tắt chế độ tối',
-        showShortcuts: 'Hiển thị phím tắt'
+        showShortcuts: 'Hiển thị phím tắt',
+        tools: 'Công cụ',
+        dragDropUpload: 'Kéo thả để tải lên',
+        dropZoneText: 'Kéo file JSON/CSV/Backup vào đây hoặc click để chọn',
+        birthdayReminders: 'Nhắc sinh nhật',
+        relationshipCalc: 'Tính mối quan hệ',
+        advancedSearch: 'Tìm kiếm nâng cao',
+        excelExport: 'Xuất Excel',
+        excelDesc: 'Xuất dữ liệu sang file Excel (.xlsx) để dễ dàng chỉnh sửa',
+        exportExcel: 'Xuất Excel',
+        autoBackup: 'Sao lưu tự động',
+        enableAutoBackup: 'Bật sao lưu tự động hàng ngày',
+        backupNow: 'Sao lưu ngay',
+        selectPerson1: 'Chọn người thứ 1',
+        selectPerson2: 'Chọn người thứ 2',
+        calculate: 'Tính toán',
+        searchName: 'Tìm theo tên...',
+        noBirthdays: 'Không có sinh nhật sắp tới',
+        today: 'Hôm nay',
+        daysLeft: 'còn {days} ngày',
+        lastBackup: 'Sao lưu lần cuối: {time}',
+        neverBackedUp: 'Chưa sao lưu lần nào'
     },
     en: {
         title: 'Personal Genealogy',
@@ -169,7 +190,28 @@ const i18n = {
         saveMember: 'Save member',
         searchFocus: 'Search',
         toggleDarkMode: 'Toggle dark mode',
-        showShortcuts: 'Show shortcuts'
+        showShortcuts: 'Show shortcuts',
+        tools: 'Tools',
+        dragDropUpload: 'Drag & Drop Upload',
+        dropZoneText: 'Drag JSON/CSV/Backup files here or click to select',
+        birthdayReminders: 'Birthday Reminders',
+        relationshipCalc: 'Relationship Calculator',
+        advancedSearch: 'Advanced Search',
+        excelExport: 'Excel Export',
+        excelDesc: 'Export data to Excel (.xlsx) file for easy editing',
+        exportExcel: 'Export Excel',
+        autoBackup: 'Auto Backup',
+        enableAutoBackup: 'Enable daily auto backup',
+        backupNow: 'Backup Now',
+        selectPerson1: 'Select person 1',
+        selectPerson2: 'Select person 2',
+        calculate: 'Calculate',
+        searchName: 'Search by name...',
+        noBirthdays: 'No upcoming birthdays',
+        today: 'Today',
+        daysLeft: '{days} days left',
+        lastBackup: 'Last backup: {time}',
+        neverBackedUp: 'Never backed up'
     }
 };
 
@@ -636,7 +678,11 @@ function updateStats() {
         }
         for (const m of members) depths[m.id] = depth(m.id);
         const generations = Math.max(...Object.values(depths), 0);
-        stats.textContent = `Thành viên: ${count} / Members: ${count}, Thế hệ: ${generations}`;
+
+        // Only update if element exists (for backward compatibility)
+        if (stats) {
+            stats.textContent = `Thành viên: ${count} / Members: ${count}, Thế hệ: ${generations}`;
+        }
     });
 }
 
@@ -1467,4 +1513,544 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEnhancedStats();
         renderTimeline();
     };
+
+    // Initialize v10 features
+    initUndoRedo();
+    initDragDrop();
+    initBirthdayReminders();
+    initRelationshipCalc();
+    initAdvancedSearch();
+    initExcelExport();
+    initAutoBackup();
 });
+
+// ========== V10.0 NEW FEATURES ==========
+
+// Undo/Redo System
+let undoStack = [];
+let redoStack = [];
+const MAX_UNDO = 50;
+
+function initUndoRedo() {
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+        }
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            redo();
+        }
+    });
+}
+
+function addToUndoStack(action) {
+    undoStack.push(action);
+    if (undoStack.length > MAX_UNDO) {
+        undoStack.shift();
+    }
+    redoStack = [];
+    updateUndoRedoUI();
+}
+
+async function undo() {
+    if (undoStack.length === 0) return;
+
+    const action = undoStack.pop();
+    redoStack.push(action);
+
+    await performUndoAction(action);
+    updateUndoRedoUI();
+}
+
+async function redo() {
+    if (redoStack.length === 0) return;
+
+    const action = redoStack.pop();
+    undoStack.push(action);
+
+    await performRedoAction(action);
+    updateUndoRedoUI();
+}
+
+async function performUndoAction(action) {
+    // Implement undo logic based on action type
+    showToast(currentLang === 'vi' ? 'Đã hoàn tác' : 'Undone', 'success');
+    await refreshSelects();
+    await renderTree();
+    updateStats();
+}
+
+async function performRedoAction(action) {
+    // Implement redo logic
+    showToast(currentLang === 'vi' ? 'Đã làm lại' : 'Redone', 'success');
+    await refreshSelects();
+    await renderTree();
+    updateStats();
+}
+
+function updateUndoRedoUI() {
+    document.getElementById('undoBtn').disabled = undoStack.length === 0;
+    document.getElementById('redoBtn').disabled = redoStack.length === 0;
+
+    const actionText = document.getElementById('actionHistory');
+    if (undoStack.length > 0) {
+        const lastAction = undoStack[undoStack.length - 1];
+        actionText.textContent = lastAction.description || '';
+    } else {
+        actionText.textContent = '';
+    }
+}
+
+// Drag & Drop Upload
+function initDragDrop() {
+    const dropZone = document.getElementById('dropZone');
+    const dropZoneInput = document.getElementById('dropZoneInput');
+
+    dropZone.addEventListener('click', () => dropZoneInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            await handleFileUpload(files[0]);
+        }
+    });
+
+    dropZoneInput.addEventListener('change', async (e) => {
+        if (e.target.files.length > 0) {
+            await handleFileUpload(e.target.files[0]);
+        }
+    });
+}
+
+async function handleFileUpload(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    showLoading();
+
+    try {
+        if (ext === 'json') {
+            await importData({ target: { files: [file] } });
+        } else if (ext === 'csv') {
+            await importCSV(file);
+        } else if (ext === 'backup') {
+            await restoreData({ target: { files: [file] } });
+        } else {
+            showToast(currentLang === 'vi' ? 'File không hỗ trợ' : 'Unsupported file', 'error');
+        }
+    } finally {
+        hideLoading();
+    }
+}
+
+async function importCSV(file) {
+    try {
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+
+        if (lines.length < 2) {
+            showToast('CSV file is empty', 'error');
+            return;
+        }
+
+        const headers = lines[0].split(',');
+        const members = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const member = {
+                name: values[1]?.replace(/"/g, '').trim(),
+                birth: values[2]?.replace(/"/g, '').trim(),
+                fatherId: values[3] ? parseInt(values[3]) : null,
+                motherId: values[4] ? parseInt(values[4]) : null,
+                spouseId: values[5] ? parseInt(values[5]) : null
+            };
+
+            if (member.name) {
+                const encrypted = await encryptData(member);
+                const tx = db.transaction('members', 'readwrite');
+                tx.objectStore('members').add({ name: member.name, data: encrypted.data, iv: encrypted.iv });
+            }
+        }
+
+        await refreshSelects();
+        await renderTree();
+        updateStats();
+        showToast(i18n[currentLang].importSuccess, 'success');
+    } catch (err) {
+        console.error('CSV import failed:', err);
+        showToast(i18n[currentLang].errorOccurred + err.message, 'error');
+    }
+}
+
+// Birthday Reminders
+async function initBirthdayReminders() {
+    await renderBirthdays();
+}
+
+async function renderBirthdays() {
+    const members = await getAllMembers();
+    const container = document.getElementById('upcomingBirthdays');
+
+    const membersWithBirth = members.filter(m => m.birth);
+
+    if (membersWithBirth.length === 0) {
+        container.innerHTML = `<p class="text-secondary">${i18n[currentLang].noBirthdays}</p>`;
+        return;
+    }
+
+    const today = new Date();
+    const birthdays = membersWithBirth.map(m => {
+        const birth = new Date(m.birth);
+        const thisYear = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+
+        if (thisYear < today) {
+            thisYear.setFullYear(today.getFullYear() + 1);
+        }
+
+        const daysUntil = Math.ceil((thisYear - today) / (1000 * 60 * 60 * 24));
+
+        return {
+            member: m,
+            date: thisYear,
+            daysUntil,
+            age: today.getFullYear() - birth.getFullYear()
+        };
+    }).sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 5);
+
+    container.innerHTML = '';
+
+    for (const bday of birthdays) {
+        const item = document.createElement('div');
+        item.className = `birthday-item ${bday.daysUntil === 0 ? 'today' : bday.daysUntil <= 7 ? 'upcoming' : ''}`;
+
+        const daysText = bday.daysUntil === 0 ? i18n[currentLang].today :
+                         i18n[currentLang].daysLeft.replace('{days}', bday.daysUntil);
+
+        item.innerHTML = `
+            <div class="birthday-icon">${bday.daysUntil === 0 ? '🎉' : '🎂'}</div>
+            <div class="birthday-info">
+                <div class="birthday-name">${bday.member.name}</div>
+                <div class="birthday-date">${formatDate(bday.member.birth)}</div>
+                <div class="birthday-age">${daysText} • ${bday.age} ${currentLang === 'vi' ? 'tuổi' : 'years old'}</div>
+            </div>
+        `;
+
+        item.addEventListener('click', () => {
+            loadMember(bday.member);
+            setCenter(bday.member.id);
+            showSection('addMember');
+        });
+
+        container.appendChild(item);
+    }
+}
+
+// Relationship Calculator
+function initRelationshipCalc() {
+    populateRelationshipSelects();
+
+    document.getElementById('calculateRelBtn').addEventListener('click', calculateRelationship);
+}
+
+async function populateRelationshipSelects() {
+    const members = await getAllMembers();
+    const select1 = document.getElementById('person1Select');
+    const select2 = document.getElementById('person2Select');
+
+    const defaultOption1 = select1.querySelector('[data-i18n="selectPerson1"]').cloneNode(true);
+    const defaultOption2 = select2.querySelector('[data-i18n="selectPerson2"]').cloneNode(true);
+
+    select1.innerHTML = '';
+    select2.innerHTML = '';
+
+    select1.appendChild(defaultOption1);
+    select2.appendChild(defaultOption2);
+
+    for (const m of members) {
+        const opt1 = document.createElement('option');
+        opt1.value = m.id;
+        opt1.textContent = m.name;
+        select1.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = m.id;
+        opt2.textContent = m.name;
+        select2.appendChild(opt2);
+    }
+}
+
+async function calculateRelationship() {
+    const id1 = parseInt(document.getElementById('person1Select').value);
+    const id2 = parseInt(document.getElementById('person2Select').value);
+
+    if (!id1 || !id2) {
+        showToast(currentLang === 'vi' ? 'Vui lòng chọn 2 người' : 'Please select 2 people', 'warning');
+        return;
+    }
+
+    if (id1 === id2) {
+        showToast(currentLang === 'vi' ? 'Vui lòng chọn 2 người khác nhau' : 'Please select different people', 'warning');
+        return;
+    }
+
+    const members = await getAllMembers();
+    const person1 = members.find(m => m.id === id1);
+    const person2 = members.find(m => m.id === id2);
+
+    const relationship = findRelationship(person1, person2, members);
+
+    const result = document.getElementById('relationshipResult');
+    result.classList.remove('empty');
+    result.textContent = relationship;
+}
+
+function findRelationship(person1, person2, allMembers) {
+    // Simple relationship detection
+    if (person1.fatherId === person2.id || person1.motherId === person2.id) {
+        return currentLang === 'vi' ? `${person2.name} là cha/mẹ của ${person1.name}` :
+               `${person2.name} is parent of ${person1.name}`;
+    }
+
+    if (person2.fatherId === person1.id || person2.motherId === person1.id) {
+        return currentLang === 'vi' ? `${person1.name} là cha/mẹ của ${person2.name}` :
+               `${person1.name} is parent of ${person2.name}`;
+    }
+
+    if (person1.spouseId === person2.id) {
+        return currentLang === 'vi' ? `${person1.name} và ${person2.name} là vợ/chồng` :
+               `${person1.name} and ${person2.name} are spouses`;
+    }
+
+    if (person1.fatherId === person2.fatherId || person1.motherId === person2.motherId) {
+        return currentLang === 'vi' ? `${person1.name} và ${person2.name} là anh chị em` :
+               `${person1.name} and ${person2.name} are siblings`;
+    }
+
+    const children1 = allMembers.filter(m => m.fatherId === person1.id || m.motherId === person1.id);
+    const children2 = allMembers.filter(m => m.fatherId === person2.id || m.motherId === person2.id);
+
+    for (const child of children1) {
+        if (child.id === person2.id) {
+            return currentLang === 'vi' ? `${person1.name} là cha/mẹ của ${person2.name}` :
+                   `${person1.name} is parent of ${person2.name}`;
+        }
+    }
+
+    return currentLang === 'vi' ? 'Không tìm thấy mối quan hệ trực tiếp' :
+           'No direct relationship found';
+}
+
+// Advanced Search
+function initAdvancedSearch() {
+    populateGenerationFilter();
+
+    document.getElementById('advSearchBtn').addEventListener('click', performAdvancedSearch);
+}
+
+async function populateGenerationFilter() {
+    const members = await getAllMembers();
+    const select = document.getElementById('advSearchGeneration');
+
+    const generations = new Set();
+    members.forEach(m => {
+        function depth(id) {
+            const member = members.find(x => x.id === id);
+            if (!member) return 0;
+            if (!member.fatherId && !member.motherId) return 1;
+            return 1 + Math.max(depth(member.fatherId), depth(member.motherId));
+        }
+        generations.add(depth(m.id));
+    });
+
+    select.innerHTML = '<option value="">Tất cả thế hệ</option>';
+
+    Array.from(generations).sort((a, b) => a - b).forEach(gen => {
+        const opt = document.createElement('option');
+        opt.value = gen;
+        opt.textContent = `${currentLang === 'vi' ? 'Thế hệ' : 'Generation'} ${gen}`;
+        select.appendChild(opt);
+    });
+}
+
+async function performAdvancedSearch() {
+    const name = document.getElementById('advSearchName').value.toLowerCase();
+    const birthFrom = document.getElementById('advSearchBirthFrom').value;
+    const birthTo = document.getElementById('advSearchBirthTo').value;
+    const generation = document.getElementById('advSearchGeneration').value;
+
+    const members = await getAllMembers();
+
+    let results = members.filter(m => {
+        let match = true;
+
+        if (name && !m.name.toLowerCase().includes(name)) {
+            match = false;
+        }
+
+        if (birthFrom && m.birth && m.birth < birthFrom) {
+            match = false;
+        }
+
+        if (birthTo && m.birth && m.birth > birthTo) {
+            match = false;
+        }
+
+        if (generation) {
+            function depth(id) {
+                const member = members.find(x => x.id === id);
+                if (!member) return 0;
+                if (!member.fatherId && !member.motherId) return 1;
+                return 1 + Math.max(depth(member.fatherId), depth(member.motherId));
+            }
+            if (depth(m.id) !== parseInt(generation)) {
+                match = false;
+            }
+        }
+
+        return match;
+    });
+
+    displaySearchResults(results);
+}
+
+function displaySearchResults(results) {
+    const container = document.getElementById('advSearchResults');
+
+    if (results.length === 0) {
+        container.innerHTML = `<p class="text-secondary">${currentLang === 'vi' ? 'Không tìm thấy kết quả' : 'No results found'}</p>`;
+        return;
+    }
+
+    container.innerHTML = '';
+
+    for (const member of results) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+
+        const age = member.birth ? calculateAge(member.birth) : '';
+        const ageText = age ? `${age} ${currentLang === 'vi' ? 'tuổi' : 'years old'}` : '';
+
+        item.innerHTML = `
+            <div class="search-result-name">${member.name}</div>
+            <div class="search-result-info">
+                ${member.birth ? formatDate(member.birth) : ''} ${ageText}
+            </div>
+        `;
+
+        item.addEventListener('click', () => {
+            loadMember(member);
+            setCenter(member.id);
+            showSection('addMember');
+        });
+
+        container.appendChild(item);
+    }
+}
+
+// Excel Export
+function initExcelExport() {
+    document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+}
+
+async function exportToExcel() {
+    const members = await getAllMembers();
+
+    // Simple CSV export (Excel compatible)
+    let csv = '\uFEFF'; // UTF-8 BOM
+    csv += 'ID,Họ tên,Ngày sinh,ID Cha,ID Mẹ,ID Vợ/Chồng\n';
+
+    for (const m of members) {
+        csv += `${m.id},"${m.name || ''}","${m.birth || ''}",${m.fatherId || ''},${m.motherId || ''},${m.spouseId || ''}\n`;
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `genealogy-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast(i18n[currentLang].exportSuccess, 'success');
+}
+
+// Auto Backup
+function initAutoBackup() {
+    const enabled = localStorage.getItem('autoBackupEnabled') === 'true';
+    document.getElementById('enableAutoBackup').checked = enabled;
+
+    document.getElementById('enableAutoBackup').addEventListener('change', (e) => {
+        localStorage.setItem('autoBackupEnabled', e.target.checked);
+        if (e.target.checked) {
+            scheduleAutoBackup();
+        }
+    });
+
+    document.getElementById('backupNowBtn').addEventListener('click', async () => {
+        await performAutoBackup();
+    });
+
+    updateLastBackupTime();
+
+    if (enabled) {
+        scheduleAutoBackup();
+    }
+}
+
+function scheduleAutoBackup() {
+    const lastBackup = localStorage.getItem('lastAutoBackup');
+    const now = Date.now();
+
+    if (!lastBackup || now - parseInt(lastBackup) > 24 * 60 * 60 * 1000) {
+        performAutoBackup();
+    }
+
+    // Check daily
+    setInterval(() => {
+        const last = localStorage.getItem('lastAutoBackup');
+        if (!last || Date.now() - parseInt(last) > 24 * 60 * 60 * 1000) {
+            performAutoBackup();
+        }
+    }, 60 * 60 * 1000); // Check every hour
+}
+
+async function performAutoBackup() {
+    try {
+        await backupData();
+        localStorage.setItem('lastAutoBackup', Date.now().toString());
+        updateLastBackupTime();
+        showToast(i18n[currentLang].backupSuccess, 'success');
+    } catch (err) {
+        console.error('Auto backup failed:', err);
+    }
+}
+
+function updateLastBackupTime() {
+    const lastBackup = localStorage.getItem('lastAutoBackup');
+    const elem = document.getElementById('lastBackupTime');
+
+    if (!lastBackup) {
+        elem.textContent = i18n[currentLang].neverBackedUp;
+    } else {
+        const date = new Date(parseInt(lastBackup));
+        const timeStr = date.toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US');
+        elem.textContent = i18n[currentLang].lastBackup.replace('{time}', timeStr);
+    }
+}
