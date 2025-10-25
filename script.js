@@ -651,7 +651,16 @@ async function saveMember(e) {
                 try {
                     await handlePendingRelation(newId);
                     await refreshSelects();
-                    setCenter(newId);
+
+                    // v13: Smart center management
+                    // If adding a relation, center on the related member, not the new one
+                    if (pendingRelation && relatedMemberId) {
+                        setCenter(relatedMemberId);
+                    } else if (!id) {
+                        // Only center on new member if it's a fresh add (not edit)
+                        setCenter(newId);
+                    }
+
                     await renderTree();
                     updateStats();
                     clearForm();
@@ -1113,16 +1122,59 @@ async function renderTree() {
     const tree = document.createElement('div');
     tree.className = 'focus-tree';
 
+    // v13: Show grandparents (ông bà)
+    const father = center.fatherId ? members.find(m => m.id === center.fatherId) : null;
+    const mother = center.motherId ? members.find(m => m.id === center.motherId) : null;
+
+    const grandparents = document.createElement('div');
+    grandparents.className = 'grandparents';
+    let hasGrandparents = false;
+
+    if (father) {
+        if (father.fatherId) {
+            const grandfather = members.find(m => m.id === father.fatherId);
+            if (grandfather) {
+                grandparents.appendChild(createNode(grandfather));
+                hasGrandparents = true;
+            }
+        }
+        if (father.motherId) {
+            const grandmother = members.find(m => m.id === father.motherId);
+            if (grandmother) {
+                grandparents.appendChild(createNode(grandmother));
+                hasGrandparents = true;
+            }
+        }
+    }
+
+    if (mother) {
+        if (mother.fatherId) {
+            const grandfather = members.find(m => m.id === mother.fatherId);
+            if (grandfather) {
+                grandparents.appendChild(createNode(grandfather));
+                hasGrandparents = true;
+            }
+        }
+        if (mother.motherId) {
+            const grandmother = members.find(m => m.id === mother.motherId);
+            if (grandmother) {
+                grandparents.appendChild(createNode(grandmother));
+                hasGrandparents = true;
+            }
+        }
+    }
+
+    if (hasGrandparents) {
+        tree.appendChild(grandparents);
+        tree.appendChild(createConnector());
+    }
+
+    // Parents
     const parents = document.createElement('div');
     parents.className = 'parents';
-    if (center.fatherId) {
-        const father = members.find(m => m.id === center.fatherId);
-        if (father) parents.appendChild(createNode(father));
-    }
-    if (center.motherId) {
-        const mother = members.find(m => m.id === center.motherId);
-        if (mother) parents.appendChild(createNode(mother));
-    }
+    if (father) parents.appendChild(createNode(father));
+    if (mother) parents.appendChild(createNode(mother));
+
     if (parents.children.length) {
         tree.appendChild(parents);
         tree.appendChild(createConnector());
@@ -1148,14 +1200,32 @@ async function renderTree() {
     centerRow.appendChild(spousesDiv);
     tree.appendChild(centerRow);
 
+    // Children
+    const children = members.filter(m => m.fatherId === center.id || m.motherId === center.id).sort((a,b) => a.name.localeCompare(b.name));
     const childrenDiv = document.createElement('div');
     childrenDiv.className = 'children';
-    for (const c of members.filter(m => m.fatherId === center.id || m.motherId === center.id).sort((a,b) => a.name.localeCompare(b.name))) {
+    for (const c of children) {
         childrenDiv.appendChild(createNode(c));
     }
     if (childrenDiv.children.length) {
         tree.appendChild(createConnector());
         tree.appendChild(childrenDiv);
+    }
+
+    // v13: Show grandchildren (cháu)
+    const grandchildren = members.filter(m => {
+        // Find children whose parent is one of center's children
+        return children.some(child => m.fatherId === child.id || m.motherId === child.id);
+    }).sort((a,b) => a.name.localeCompare(b.name));
+
+    if (grandchildren.length > 0) {
+        const grandchildrenDiv = document.createElement('div');
+        grandchildrenDiv.className = 'grandchildren';
+        for (const gc of grandchildren) {
+            grandchildrenDiv.appendChild(createNode(gc));
+        }
+        tree.appendChild(createConnector());
+        tree.appendChild(grandchildrenDiv);
     }
 
     container.appendChild(tree);
