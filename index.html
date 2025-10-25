@@ -210,16 +210,32 @@
                 <i class="bi bi-search"></i>
                 <input type="text" id="searchInput" placeholder="Tìm kiếm..." data-i18n-placeholder="search">
             </div>
+            <div class="filter-controls">
+                <select id="statusFilter" class="filter-select">
+                    <option value="all" data-i18n="all">Tất cả</option>
+                    <option value="living" data-i18n="living">Còn sống</option>
+                    <option value="deceased" data-i18n="deceased">Đã mất</option>
+                </select>
+                <select id="genderFilter" class="filter-select">
+                    <option value="all" data-i18n="all">Tất cả giới tính</option>
+                    <option value="male" data-i18n="male">Nam</option>
+                    <option value="female" data-i18n="female">Nữ</option>
+                    <option value="other" data-i18n="other">Khác</option>
+                </select>
+            </div>
             <div class="zoom-controls">
-                <button id="zoomOut" class="icon-btn" title="Zoom out">
+                <button id="zoomOut" class="icon-btn" data-i18n-title="zoomOut" title="Thu nhỏ">
                     <i class="bi bi-zoom-out"></i>
                 </button>
                 <span id="zoomLevel">100%</span>
-                <button id="zoomIn" class="icon-btn" title="Zoom in">
+                <button id="zoomIn" class="icon-btn" data-i18n-title="zoomIn" title="Phóng to">
                     <i class="bi bi-zoom-in"></i>
                 </button>
-                <button id="resetZoom" class="icon-btn" title="Reset">
-                    <i class="bi bi-arrow-clockwise"></i>
+                <button id="fitScreen" class="icon-btn" data-i18n-title="fitScreen" title="Vừa màn hình">
+                    <i class="bi bi-fullscreen"></i>
+                </button>
+                <button id="recenterTree" class="icon-btn" data-i18n-title="recenter" title="Về trung tâm">
+                    <i class="bi bi-bullseye"></i>
                 </button>
             </div>
         </div>
@@ -231,8 +247,17 @@
 <section id="timelineSection" class="panel">
     <h2 data-i18n="timeline">Dòng thời gian</h2>
     <div class="timeline-controls">
-        <button id="sortByBirth" class="active" data-i18n="sortByBirth">Theo ngày sinh</button>
-        <button id="sortByAdded" data-i18n="sortByAdded">Theo thêm vào</button>
+        <div class="timeline-sort">
+            <button id="sortByBirth" class="active" data-i18n="sortByBirth">Theo ngày sinh</button>
+            <button id="sortByAdded" data-i18n="sortByAdded">Theo thêm vào</button>
+        </div>
+        <div class="timeline-filters">
+            <select id="timelineStatusFilter" class="filter-select">
+                <option value="all" data-i18n="all">Tất cả</option>
+                <option value="living" data-i18n="living">Còn sống</option>
+                <option value="deceased" data-i18n="deceased">Đã mất</option>
+            </select>
+        </div>
     </div>
     <div id="timeline"></div>
 </section>

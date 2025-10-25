@@ -166,7 +166,8 @@ const i18n = {
         age: 'Tuổi',
         lifespan: 'Thọ',
         unlinkedMembers: 'Thành viên chưa liên kết',
-        status: 'Tình trạng'
+        status: 'Tình trạng',
+        all: 'Tất cả'
     },
     en: {
         title: 'Personal Genealogy',
@@ -331,7 +332,8 @@ const i18n = {
         age: 'Age',
         lifespan: 'Lifespan',
         unlinkedMembers: 'Unlinked Members',
-        status: 'Status'
+        status: 'Status',
+        all: 'All'
     }
 };
 
@@ -365,6 +367,8 @@ async function init() {
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
     document.getElementById('searchInput').addEventListener('input', renderTree);
+    document.getElementById('statusFilter').addEventListener('change', renderTree);
+    document.getElementById('genderFilter').addEventListener('change', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     document.getElementById('exportEncryptedBtn').addEventListener('click', exportEncrypted);
@@ -384,6 +388,37 @@ async function init() {
         } else {
             deathDateGroup.style.display = 'none';
             document.getElementById('death').value = '';
+        }
+    });
+
+    // v13: Tree zoom controls
+    let treeZoom = 1;
+    const tree = document.getElementById('tree');
+    const zoomLevelSpan = document.getElementById('zoomLevel');
+
+    document.getElementById('zoomIn').addEventListener('click', () => {
+        treeZoom = Math.min(treeZoom + 0.1, 2);
+        tree.style.transform = `scale(${treeZoom})`;
+        zoomLevelSpan.textContent = Math.round(treeZoom * 100) + '%';
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', () => {
+        treeZoom = Math.max(treeZoom - 0.1, 0.5);
+        tree.style.transform = `scale(${treeZoom})`;
+        zoomLevelSpan.textContent = Math.round(treeZoom * 100) + '%';
+    });
+
+    document.getElementById('fitScreen').addEventListener('click', () => {
+        treeZoom = 1;
+        tree.style.transform = 'scale(1)';
+        zoomLevelSpan.textContent = '100%';
+        tree.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    document.getElementById('recenterTree').addEventListener('click', () => {
+        const centerNode = document.querySelector('.member-node.center');
+        if (centerNode) {
+            centerNode.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
     });
 
@@ -446,6 +481,11 @@ function showSection(id) {
     // Update timeline when timeline section is opened
     if (id === 'timelineSection') {
         renderTimeline();
+    }
+
+    // Update tree when tree section is opened
+    if (id === 'treeSection') {
+        renderTree();
     }
 }
 
@@ -1022,19 +1062,58 @@ function createConnector() {
     return line;
 }
 
+// v13: Fuzzy search helper
+function fuzzyMatch(text, search) {
+    if (!search) return true;
+    text = text.toLowerCase();
+    search = search.toLowerCase();
+    let searchIndex = 0;
+    for (let i = 0; i < text.length && searchIndex < search.length; i++) {
+        if (text[i] === search[searchIndex]) {
+            searchIndex++;
+        }
+    }
+    return searchIndex === search.length;
+}
+
 async function renderTree() {
-    const members = await getAllMembers();
+    let members = await getAllMembers();
     const container = document.getElementById('tree');
     if (!members.length) {
         container.textContent = i18n[currentLang].noMembers;
         return;
     }
-    const search = document.getElementById('searchInput').value.toLowerCase();
+
+    // v13: Apply filters
+    const statusFilter = document.getElementById('statusFilter').value;
+    const genderFilter = document.getElementById('genderFilter').value;
+    const search = document.getElementById('searchInput').value;
+
+    // Filter by status (living/deceased)
+    if (statusFilter === 'living') {
+        members = members.filter(m => !m.death);
+    } else if (statusFilter === 'deceased') {
+        members = members.filter(m => m.death);
+    }
+
+    // Filter by gender
+    if (genderFilter !== 'all') {
+        members = members.filter(m => m.gender === genderFilter);
+    }
+
+    // Fuzzy search
     if (search) {
-        const found = members.find(m => m.name.toLowerCase().includes(search));
+        const found = members.find(m => fuzzyMatch(m.name, search));
         if (found) centerId = found.id;
     }
-    if (!centerId || !members.find(m => m.id === centerId)) centerId = members[0].id;
+
+    if (!centerId || !members.find(m => m.id === centerId)) {
+        centerId = members.length > 0 ? members[0].id : null;
+    }
+    if (!centerId) {
+        container.textContent = i18n[currentLang].noMembers;
+        return;
+    }
     localStorage.setItem('centerId', centerId);
     const center = members.find(m => m.id === centerId);
     container.innerHTML = '';
@@ -1683,12 +1762,20 @@ function applyZoom() {
 
 // Timeline View
 async function renderTimeline() {
-    const members = await getAllMembers();
+    let members = await getAllMembers();
     const container = document.getElementById('timeline');
 
     if (!members.length) {
         container.innerHTML = `<p>${i18n[currentLang].noMembers}</p>`;
         return;
+    }
+
+    // v13: Apply status filter
+    const statusFilter = document.getElementById('timelineStatusFilter').value;
+    if (statusFilter === 'living') {
+        members = members.filter(m => !m.death);
+    } else if (statusFilter === 'deceased') {
+        members = members.filter(m => m.death);
     }
 
     const sorted = members.filter(m => m.birth).sort((a, b) => {
@@ -2107,6 +2194,9 @@ async function initV10Features() {
         // TODO: Implement sort by added date
         renderTimeline();
     });
+
+    // v13: Timeline filter
+    document.getElementById('timelineStatusFilter').addEventListener('change', renderTimeline);
 
     // Override updateStats to use enhanced version
     const originalUpdateStats = window.updateStats;
