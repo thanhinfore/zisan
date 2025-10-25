@@ -455,11 +455,18 @@ button:disabled {
     gap: 2rem;
 }
 
-.parents, .children, .siblings, .spouses {
+/* v13: Tree rows including grandparents and grandchildren */
+.grandparents, .parents, .children, .grandchildren, .siblings, .spouses {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.grandparents .member-node,
+.grandchildren .member-node {
+    opacity: 0.85;
+    font-size: 0.9rem;
 }
 
 .member-node {
