@@ -167,7 +167,12 @@ const i18n = {
         lifespan: 'Thọ',
         unlinkedMembers: 'Thành viên chưa liên kết',
         status: 'Tình trạng',
-        all: 'Tất cả'
+        all: 'Tất cả',
+        addMemberBtn: 'Thêm thành viên',
+        updateMember: 'Cập nhật',
+        cancel: 'Hủy',
+        editingMember: 'Đang sửa: {name}',
+        addingRelation: 'Đang thêm {relation} của {name}'
     },
     en: {
         title: 'Personal Genealogy',
@@ -333,7 +338,12 @@ const i18n = {
         lifespan: 'Lifespan',
         unlinkedMembers: 'Unlinked Members',
         status: 'Status',
-        all: 'All'
+        all: 'All',
+        addMemberBtn: 'Add Member',
+        updateMember: 'Update',
+        cancel: 'Cancel',
+        editingMember: 'Editing: {name}',
+        addingRelation: 'Adding {relation} of {name}'
     }
 };
 
@@ -362,7 +372,7 @@ async function init() {
     updateDataStats();
     document.getElementById('memberForm').addEventListener('submit', saveMember);
     document.getElementById('deleteBtn').addEventListener('click', deleteMember);
-    document.getElementById('newBtn').addEventListener('click', clearForm);
+    document.getElementById('cancelBtn').addEventListener('click', clearForm);
     document.getElementById('exportBtn').addEventListener('click', exportData);
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
@@ -908,6 +918,9 @@ async function prepareAddRelative(member, relation) {
     pendingRelation = relation;
     relatedMemberId = member.id;
 
+    // v13: Set form to ADD RELATION mode
+    setFormMode('addRelation', { relation: relation, name: member.name });
+
     // Smart relationship setup based on gender and relation type
     if (relation === 'child') {
         // Adding child - auto-detect parent based on gender
@@ -928,38 +941,18 @@ async function prepareAddRelative(member, relation) {
             // Will be handled in handlePendingRelation
         }
 
-        // Show context message
-        const contextMsg = member.gender === 'male' ?
-            i18n[currentLang].addingSonOf.replace('{name}', member.name) :
-            member.gender === 'female' ?
-            i18n[currentLang].addingDaughterOf.replace('{name}', member.name) :
-            i18n[currentLang].addingChildOf.replace('{name}', member.name);
-
-        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
-
     } else if (relation === 'sibling') {
         // Adding sibling - auto-copy parents
         document.getElementById('fatherSelect').value = member.fatherId || '';
         document.getElementById('motherSelect').value = member.motherId || '';
 
-        const contextMsg = i18n[currentLang].addingSiblingOf.replace('{name}', member.name);
-        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
-
     } else if (relation === 'spouse') {
         document.getElementById('spouseSelect').value = member.id;
 
-        const contextMsg = i18n[currentLang].addingSpouseOf.replace('{name}', member.name);
-        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
-
     } else if (relation === 'father') {
         // Will be handled in handlePendingRelation to update member
-        const contextMsg = i18n[currentLang].addingFatherOf.replace('{name}', member.name);
-        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
-
     } else if (relation === 'mother') {
         // Will be handled in handlePendingRelation to update member
-        const contextMsg = i18n[currentLang].addingMotherOf.replace('{name}', member.name);
-        document.getElementById('addMember').querySelector('h2').textContent = contextMsg;
     }
 
     syncSelectOptions();
@@ -1208,6 +1201,62 @@ function setCenter(id) {
     renderTree();
 }
 
+// v13: Form mode management
+function setFormMode(mode, contextData = null) {
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnIcon = submitBtn.querySelector('i');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const formTitle = document.getElementById('formTitle');
+    const contextBanner = document.getElementById('formContextBanner');
+    const contextText = document.getElementById('formContextText');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const centerBtn = document.getElementById('centerBtn');
+
+    if (mode === 'create') {
+        // CREATE mode
+        formTitle.textContent = i18n[currentLang].addMember;
+        contextBanner.style.display = 'none';
+        submitBtnIcon.className = 'bi bi-plus-circle';
+        submitBtnText.textContent = i18n[currentLang].addMemberBtn;
+        submitBtn.className = 'btn-primary';
+        deleteBtn.disabled = true;
+        centerBtn.disabled = true;
+    } else if (mode === 'edit') {
+        // EDIT mode
+        formTitle.textContent = i18n[currentLang].addMember;
+        contextBanner.style.display = 'flex';
+        contextText.textContent = i18n[currentLang].editingMember.replace('{name}', contextData.name);
+        submitBtnIcon.className = 'bi bi-check-circle';
+        submitBtnText.textContent = i18n[currentLang].updateMember;
+        submitBtn.className = 'btn-primary';
+        deleteBtn.disabled = false;
+        centerBtn.disabled = false;
+    } else if (mode === 'addRelation') {
+        // ADD RELATION mode
+        formTitle.textContent = i18n[currentLang].addMember;
+        contextBanner.style.display = 'flex';
+        let relationText = contextData.relation;
+        if (currentLang === 'vi') {
+            const relationMap = {
+                'child': 'con',
+                'sibling': 'anh/chị/em',
+                'spouse': 'vợ/chồng',
+                'father': 'cha',
+                'mother': 'mẹ'
+            };
+            relationText = relationMap[contextData.relation] || contextData.relation;
+        }
+        contextText.textContent = i18n[currentLang].addingRelation
+            .replace('{relation}', relationText)
+            .replace('{name}', contextData.name);
+        submitBtnIcon.className = 'bi bi-plus-circle';
+        submitBtnText.textContent = i18n[currentLang].addMemberBtn;
+        submitBtn.className = 'btn-primary';
+        deleteBtn.disabled = true;
+        centerBtn.disabled = true;
+    }
+}
+
 async function loadMember(member) {
     await refreshSelects(member.id);
     document.getElementById('memberId').value = member.id;
@@ -1232,8 +1281,8 @@ async function loadMember(member) {
         deathDateGroup.style.display = 'none';
     }
 
-    document.getElementById('deleteBtn').disabled = false;
-    document.getElementById('centerBtn').disabled = false;
+    // v13: Set form to EDIT mode
+    setFormMode('edit', { name: member.name });
 }
 
 function clearForm() {
@@ -1250,6 +1299,9 @@ function clearForm() {
     document.getElementById('livingStatus').value = 'living';
     document.getElementById('deathDateGroup').style.display = 'none';
     document.getElementById('death').value = '';
+
+    // v13: Set form to CREATE mode
+    setFormMode('create');
 
     document.getElementById('name').focus();
 }
