@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '12.0';
+const APP_VERSION = '13.0';
 
 const i18n = {
     vi: {
@@ -164,7 +164,10 @@ const i18n = {
         viewPhotos: 'Xem ảnh ({count})',
         noPhotos: 'Chưa có ảnh',
         age: 'Tuổi',
-        lifespan: 'Thọ'
+        lifespan: 'Thọ',
+        unlinkedMembers: 'Thành viên chưa liên kết',
+        status: 'Tình trạng',
+        all: 'Tất cả'
     },
     en: {
         title: 'Personal Genealogy',
@@ -327,7 +330,10 @@ const i18n = {
         viewPhotos: 'View photos ({count})',
         noPhotos: 'No photos',
         age: 'Age',
-        lifespan: 'Lifespan'
+        lifespan: 'Lifespan',
+        unlinkedMembers: 'Unlinked Members',
+        status: 'Status',
+        all: 'All'
     }
 };
 
@@ -361,6 +367,8 @@ async function init() {
     document.getElementById('importInput').addEventListener('change', importData);
     document.getElementById('qrBtn').addEventListener('click', showQR);
     document.getElementById('searchInput').addEventListener('input', renderTree);
+    document.getElementById('statusFilter').addEventListener('change', renderTree);
+    document.getElementById('genderFilter').addEventListener('change', renderTree);
     document.getElementById('centerBtn').addEventListener('click', () => setCenter(document.getElementById('memberId').value));
     document.getElementById('languageSelect').addEventListener('change', e => updateLanguage(e.target.value));
     document.getElementById('exportEncryptedBtn').addEventListener('click', exportEncrypted);
@@ -371,6 +379,49 @@ async function init() {
     document.getElementById('passwordForm').addEventListener('submit', changePassword);
     document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
     document.getElementById('version').textContent = 'v' + APP_VERSION;
+
+    // v13: Living status toggle
+    document.getElementById('livingStatus').addEventListener('change', function() {
+        const deathDateGroup = document.getElementById('deathDateGroup');
+        if (this.value === 'deceased') {
+            deathDateGroup.style.display = 'block';
+        } else {
+            deathDateGroup.style.display = 'none';
+            document.getElementById('death').value = '';
+        }
+    });
+
+    // v13: Tree zoom controls
+    let treeZoom = 1;
+    const tree = document.getElementById('tree');
+    const zoomLevelSpan = document.getElementById('zoomLevel');
+
+    document.getElementById('zoomIn').addEventListener('click', () => {
+        treeZoom = Math.min(treeZoom + 0.1, 2);
+        tree.style.transform = `scale(${treeZoom})`;
+        zoomLevelSpan.textContent = Math.round(treeZoom * 100) + '%';
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', () => {
+        treeZoom = Math.max(treeZoom - 0.1, 0.5);
+        tree.style.transform = `scale(${treeZoom})`;
+        zoomLevelSpan.textContent = Math.round(treeZoom * 100) + '%';
+    });
+
+    document.getElementById('fitScreen').addEventListener('click', () => {
+        treeZoom = 1;
+        tree.style.transform = 'scale(1)';
+        zoomLevelSpan.textContent = '100%';
+        tree.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    document.getElementById('recenterTree').addEventListener('click', () => {
+        const centerNode = document.querySelector('.member-node.center');
+        if (centerNode) {
+            centerNode.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        }
+    });
+
     actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
     childModal = new bootstrap.Modal(document.getElementById('childModal'));
     $('#editBtn').on('click', () => {
@@ -420,6 +471,22 @@ function showSection(id) {
     const sections = document.querySelectorAll('section.panel');
     buttons.forEach(b => b.classList.toggle('active', b.dataset.section === id));
     sections.forEach(s => s.classList.toggle('active', s.id === id));
+
+    // Update stats and charts when stats section is opened
+    if (id === 'statsSection') {
+        updateStats();
+        updateEnhancedStats();
+    }
+
+    // Update timeline when timeline section is opened
+    if (id === 'timelineSection') {
+        renderTimeline();
+    }
+
+    // Update tree when tree section is opened
+    if (id === 'treeSection') {
+        renderTree();
+    }
 }
 
 function setupNav() {
@@ -428,7 +495,8 @@ function setupNav() {
         showSection(btn.dataset.section);
         if (btn.dataset.section === 'addMember') clearForm();
     }));
-    if (buttons.length) showSection(buttons[0].dataset.section);
+    // v13: Show tree section by default (main feature)
+    showSection('treeSection');
 }
 
 function openDB() {
@@ -994,19 +1062,58 @@ function createConnector() {
     return line;
 }
 
+// v13: Fuzzy search helper
+function fuzzyMatch(text, search) {
+    if (!search) return true;
+    text = text.toLowerCase();
+    search = search.toLowerCase();
+    let searchIndex = 0;
+    for (let i = 0; i < text.length && searchIndex < search.length; i++) {
+        if (text[i] === search[searchIndex]) {
+            searchIndex++;
+        }
+    }
+    return searchIndex === search.length;
+}
+
 async function renderTree() {
-    const members = await getAllMembers();
+    let members = await getAllMembers();
     const container = document.getElementById('tree');
     if (!members.length) {
         container.textContent = i18n[currentLang].noMembers;
         return;
     }
-    const search = document.getElementById('searchInput').value.toLowerCase();
+
+    // v13: Apply filters
+    const statusFilter = document.getElementById('statusFilter').value;
+    const genderFilter = document.getElementById('genderFilter').value;
+    const search = document.getElementById('searchInput').value;
+
+    // Filter by status (living/deceased)
+    if (statusFilter === 'living') {
+        members = members.filter(m => !m.death);
+    } else if (statusFilter === 'deceased') {
+        members = members.filter(m => m.death);
+    }
+
+    // Filter by gender
+    if (genderFilter !== 'all') {
+        members = members.filter(m => m.gender === genderFilter);
+    }
+
+    // Fuzzy search
     if (search) {
-        const found = members.find(m => m.name.toLowerCase().includes(search));
+        const found = members.find(m => fuzzyMatch(m.name, search));
         if (found) centerId = found.id;
     }
-    if (!centerId || !members.find(m => m.id === centerId)) centerId = members[0].id;
+
+    if (!centerId || !members.find(m => m.id === centerId)) {
+        centerId = members.length > 0 ? members[0].id : null;
+    }
+    if (!centerId) {
+        container.textContent = i18n[currentLang].noMembers;
+        return;
+    }
     localStorage.setItem('centerId', centerId);
     const center = members.find(m => m.id === centerId);
     container.innerHTML = '';
@@ -1059,6 +1166,39 @@ async function renderTree() {
     }
 
     container.appendChild(tree);
+
+    // v13: Show unlinked members (those not connected to the center person's tree)
+    const linkedIds = new Set();
+    function markLinked(id) {
+        if (!id || linkedIds.has(id)) return;
+        const member = members.find(m => m.id === id);
+        if (!member) return;
+        linkedIds.add(id);
+        markLinked(member.fatherId);
+        markLinked(member.motherId);
+        markLinked(member.spouseId);
+        // Mark children
+        members.filter(m => m.fatherId === id || m.motherId === id).forEach(c => markLinked(c.id));
+    }
+    markLinked(centerId);
+
+    const unlinked = members.filter(m => !linkedIds.has(m.id));
+    if (unlinked.length > 0) {
+        const unlinkedSection = document.createElement('div');
+        unlinkedSection.className = 'unlinked-section';
+        const header = document.createElement('h3');
+        header.textContent = i18n[currentLang].unlinkedMembers || 'Thành viên chưa liên kết';
+        header.className = 'unlinked-header';
+        unlinkedSection.appendChild(header);
+
+        const unlinkedGrid = document.createElement('div');
+        unlinkedGrid.className = 'unlinked-grid';
+        unlinked.forEach(m => {
+            unlinkedGrid.appendChild(createNode(m));
+        });
+        unlinkedSection.appendChild(unlinkedGrid);
+        container.appendChild(unlinkedSection);
+    }
 }
 
 function setCenter(id) {
@@ -1080,6 +1220,18 @@ async function loadMember(member) {
     document.getElementById('fatherSelect').value = member.fatherId || '';
     document.getElementById('motherSelect').value = member.motherId || '';
     document.getElementById('spouseSelect').value = member.spouseId || '';
+
+    // v13: Set living status and toggle death date visibility
+    const livingStatus = document.getElementById('livingStatus');
+    const deathDateGroup = document.getElementById('deathDateGroup');
+    if (member.death) {
+        livingStatus.value = 'deceased';
+        deathDateGroup.style.display = 'block';
+    } else {
+        livingStatus.value = 'living';
+        deathDateGroup.style.display = 'none';
+    }
+
     document.getElementById('deleteBtn').disabled = false;
     document.getElementById('centerBtn').disabled = false;
 }
@@ -1093,6 +1245,12 @@ function clearForm() {
     pendingRelation = null;
     relatedMemberId = null;
     refreshSelects();
+
+    // v13: Reset living status to "living" and hide death date
+    document.getElementById('livingStatus').value = 'living';
+    document.getElementById('deathDateGroup').style.display = 'none';
+    document.getElementById('death').value = '';
+
     document.getElementById('name').focus();
 }
 
@@ -1604,12 +1762,20 @@ function applyZoom() {
 
 // Timeline View
 async function renderTimeline() {
-    const members = await getAllMembers();
+    let members = await getAllMembers();
     const container = document.getElementById('timeline');
 
     if (!members.length) {
         container.innerHTML = `<p>${i18n[currentLang].noMembers}</p>`;
         return;
+    }
+
+    // v13: Apply status filter
+    const statusFilter = document.getElementById('timelineStatusFilter').value;
+    if (statusFilter === 'living') {
+        members = members.filter(m => !m.death);
+    } else if (statusFilter === 'deceased') {
+        members = members.filter(m => m.death);
     }
 
     const sorted = members.filter(m => m.birth).sort((a, b) => {
@@ -2028,6 +2194,9 @@ async function initV10Features() {
         // TODO: Implement sort by added date
         renderTimeline();
     });
+
+    // v13: Timeline filter
+    document.getElementById('timelineStatusFilter').addEventListener('change', renderTimeline);
 
     // Override updateStats to use enhanced version
     const originalUpdateStats = window.updateStats;
