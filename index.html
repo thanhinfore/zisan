@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="12.0">
+    <meta name="version" content="13.0">
     <meta name="theme-color" content="#4a90e2">
     <meta name="description" content="Ứng dụng quản lý gia phả cá nhân với bảo mật cao, hoạt động offline">
     <link rel="manifest" href="manifest.json">
@@ -109,11 +109,20 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="death" data-i18n="death">Ngày mất</label>
-                <div class="input-with-icon">
-                    <i class="bi bi-calendar-x"></i>
-                    <input type="date" id="death">
-                </div>
+                <label data-i18n="status">Tình trạng</label>
+                <select id="livingStatus">
+                    <option value="living" data-i18n="living">Còn sống</option>
+                    <option value="deceased" data-i18n="deceased">Đã mất</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Death date (only shown when deceased) -->
+        <div class="form-group" id="deathDateGroup" style="display:none;">
+            <label for="death" data-i18n="death">Ngày mất</label>
+            <div class="input-with-icon">
+                <i class="bi bi-calendar-x"></i>
+                <input type="date" id="death">
             </div>
         </div>
 

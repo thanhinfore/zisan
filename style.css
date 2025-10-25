@@ -1450,3 +1450,39 @@ html {
         padding: 1rem;
     }
 }
+
+/* v13: Unlinked Members Section */
+.unlinked-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: var(--card);
+    border-radius: 12px;
+    border: 2px dashed var(--border);
+}
+
+.unlinked-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.unlinked-header::before {
+    content: '⚠️';
+    font-size: 1.5rem;
+}
+
+.unlinked-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    justify-items: center;
+}
+
+.unlinked-grid .member-node {
+    width: 100%;
+    max-width: 250px;
+}
