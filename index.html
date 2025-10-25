@@ -80,7 +80,14 @@
     <p data-i18n="welcome">Chào mừng! Bắt đầu bằng cách thêm thành viên đầu tiên.</p>
 </section>
 <section id="addMember" class="panel">
-    <h2 data-i18n="addMember">Thêm thành viên</h2>
+    <h2 id="formTitle" data-i18n="addMember">Thêm thành viên</h2>
+
+    <!-- v13: Context Banner -->
+    <div id="formContextBanner" class="form-context-banner" style="display:none;">
+        <i class="bi bi-info-circle"></i>
+        <span id="formContextText"></span>
+    </div>
+
     <form id="memberForm" class="modern-form">
         <input type="hidden" id="memberId">
 
@@ -187,11 +194,11 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" id="newBtn" class="btn-secondary" data-i18n="new">
-                <i class="bi bi-plus-circle"></i> Thêm mới
+            <button type="submit" id="submitBtn" class="btn-primary">
+                <i class="bi bi-plus-circle"></i> <span id="submitBtnText" data-i18n="addMemberBtn">Thêm thành viên</span>
             </button>
-            <button type="submit" class="btn-primary" data-i18n="save">
-                <i class="bi bi-check-circle"></i> Lưu
+            <button type="button" id="cancelBtn" class="btn-secondary" data-i18n="cancel">
+                <i class="bi bi-x-circle"></i> Hủy
             </button>
             <button type="button" id="deleteBtn" class="btn-danger" data-i18n="delete" disabled>
                 <i class="bi bi-trash"></i> Xóa

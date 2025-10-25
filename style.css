@@ -1464,6 +1464,29 @@ html {
     }
 }
 
+/* v13: Form Context Banner */
+.form-context-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05));
+    border-left: 4px solid var(--primary);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.form-context-banner i {
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+[data-theme="dark"] .form-context-banner {
+    background: linear-gradient(135deg, rgba(99, 179, 237, 0.15), rgba(99, 179, 237, 0.05));
+}
+
 /* v13: Filter Controls */
 .filter-controls {
     display: flex;
