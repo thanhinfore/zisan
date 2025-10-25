@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = '13.0';
+const APP_VERSION = '14.0';
 
 const i18n = {
     vi: {
